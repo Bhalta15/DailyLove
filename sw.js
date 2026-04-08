@@ -50,3 +50,7 @@ self.addEventListener("fetch", e => {
       .then(res => res || fetch(e.request))
   );
 });
+
+self.addEventListener("activate", event => {
+  event.waitUntil(self.clients.claim());
+});
