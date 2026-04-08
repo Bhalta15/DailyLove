@@ -106,9 +106,16 @@ function iniciarTiempoReal() {
 
 // ===== FECHAS =====
 function obtenerGrupoFecha(fecha) {
-  const hoy  = new Date();
-  const f    = fecha?.toDate ? fecha.toDate() : new Date(fecha);
-  const diff = Math.floor((hoy - f) / (1000 * 60 * 60 * 24));
+  const f = fecha?.toDate ? fecha.toDate() : new Date(fecha);
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const fechaItem = new Date(f);
+  fechaItem.setHours(0, 0, 0, 0);
+
+  const diff = Math.floor((hoy - fechaItem) / (1000 * 60 * 60 * 24));
+
   if (diff === 0) return "Hoy";
   if (diff === 1) return "Ayer";
   return f.toLocaleDateString('es-MX');
