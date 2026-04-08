@@ -74,13 +74,28 @@ function iniciarTiempoReal() {
 
   const ref = collection(db, "parejas", codigoPareja, "contenido");
 
+  let primeraCarga = true;
+
   onSnapshot(ref, (snapshot) => {
 
     const datos = [];
 
+    // 🔥 DETECTAR NUEVOS DATOS
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+
+        if (!primeraCarga) {
+          mostrarNotificacion();
+        }
+
+      }
+    });
+
     snapshot.forEach(doc => {
       datos.push({ id: doc.id, ...doc.data() });
     });
+
+    primeraCarga = false;
 
     datos.sort((a, b) => {
       const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
@@ -90,6 +105,16 @@ function iniciarTiempoReal() {
 
     renderTodo(datos);
   });
+}
+
+// 🔔 NOTIFICACIÓN
+function mostrarNotificacion() {
+  if (Notification.permission === "granted") {
+    new Notification("💖 Daily Love", {
+      body: "Tu pareja acaba de publicar algo 💌",
+      icon: "DailyLove.png"
+    });
+  }
 }
 
 // ===== FECHAS =====
@@ -181,7 +206,7 @@ function renderPorFecha(tipo, datos) {
   cont.innerHTML = html;
 }
 
-// ===== CARDS (SIN HOVER SCALE) =====
+// ===== CARDS =====
 function crearCard(d) {
 
   if (d.tipo === "mensaje" || d.tipo === "frase") {
@@ -282,7 +307,7 @@ window.toggleGrupo = (id, el) => {
   }
 };
 
-// ===== FOTO MODAL (COMPLETO IGUAL QUE SECUNDARIO) =====
+// ===== FOTO MODAL =====
 window.abrirFoto = (src) => {
   const modal = document.getElementById("modalFoto");
   const img = document.getElementById("imagenGrande");
@@ -302,3 +327,10 @@ window.abrirFoto = (src) => {
     modal.classList.remove("flex");
   };
 };
+
+
+
+// 🔔 PEDIR PERMISO
+if ("Notification" in window) {
+  Notification.requestPermission();
+}

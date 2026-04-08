@@ -1,7 +1,15 @@
 // 🔥 IMPORTS
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { 
+  getAuth, 
+  setPersistence, 
+  browserLocalPersistence 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import { getFirestore } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 
 // 🔥 CONFIG
 const firebaseConfig = {
@@ -14,9 +22,23 @@ const firebaseConfig = {
   measurementId: "G-VJ244V6QZN"
 };
 
-// 🔥 INICIALIZAR
+
+// 🔥 INICIALIZAR APP
 const app = initializeApp(firebaseConfig);
 
-// 🔥 EXPORTS
+
+// 🔥 AUTH + PERSISTENCIA (LA CLAVE 🔥)
 export const auth = getAuth(app);
+
+// Forzar que la sesión se quede guardada SIEMPRE
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log("🔥 Persistencia LOCAL activada");
+  })
+  .catch((error) => {
+    console.error("❌ Error en persistencia:", error);
+  });
+
+
+// 🔥 FIRESTORE
 export const db = getFirestore(app);

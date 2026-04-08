@@ -1,10 +1,18 @@
-import { GoogleAuthProvider, signInWithPopup,
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification
+  sendEmailVerification,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 import { auth, db } from "./firebase.js";
 import { setDoc, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// 🔥 FORZAR SESIÓN PERMANENTE (AQUÍ ESTÁ LA CLAVE)
+setPersistence(auth, browserLocalPersistence);
 
 // ===== ELEMENTOS =====
 const btnRegistrar = document.getElementById("btnRegistrar");
@@ -56,7 +64,6 @@ btnIniciar.addEventListener("click", async () => {
       return;
     }
 
-    // 🔥 LEER ROL DESDE FIRESTORE
     const snap = await getDoc(doc(db, "usuarios", user.uid));
 
     if (snap.exists()) {
@@ -98,7 +105,6 @@ btnGoogle.addEventListener("click", async () => {
       });
     }
 
-    // 🔥 LEER ROL ACTUALIZADO DESDE FIRESTORE
     const snapFinal = await getDoc(userRef);
     const datos = snapFinal.data();
 
@@ -113,7 +119,7 @@ btnGoogle.addEventListener("click", async () => {
   }
 });
 
-// ===== MANEJO DE ERRORES =====
+// ===== ERRORES =====
 function mostrarError(code) {
   const errores = {
     "auth/email-already-in-use":  "Este correo ya está registrado 📧",
