@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, getDoc, collection, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { mostrarToast } from "./toast.js";
 
 // ===== ELEMENTOS =====
 const menuBtn         = document.getElementById('menuBtn');
@@ -33,6 +34,8 @@ onAuthStateChanged(auth, async (user) => {
       codigoPareja = datos.codigo;
       document.getElementById("userName").textContent     = datos.usuario;
       document.getElementById("userNameMain").textContent = datos.usuario;
+
+      mostrarToast(`¡Bienvenida ${datos.usuario}! 💖`, "info");
     }
 
     iniciarTiempoReal();
@@ -72,8 +75,8 @@ document.querySelectorAll('.itemMenu').forEach(btn => {
 
 // ===== MODAL FOTO GRANDE =====
 window.abrirFoto = (src) => {
-  imagenGrande.src    = src;
-  btnDescargar.href   = src;
+  imagenGrande.src  = src;
+  btnDescargar.href = src;
   modalFoto.classList.remove('hidden');
   modalFoto.classList.add('flex');
 };

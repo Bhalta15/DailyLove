@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, getDoc, collection, addDoc, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { mostrarToast } from "./toast.js";
 
 // ===== ELEMENTOS =====
 const menuBtn         = document.getElementById('menuBtn');
@@ -40,6 +41,8 @@ onAuthStateChanged(auth, async (user) => {
       codigoPareja = datos.codigo;
       document.getElementById("userName").textContent     = datos.usuario;
       document.getElementById("userNameMain").textContent = datos.usuario;
+
+      mostrarToast(`¡Bienvenido ${datos.usuario}! 💖`, "info");
     }
 
     iniciarTiempoReal();
@@ -175,14 +178,14 @@ guardar.onclick = async () => {
     contenido = inputTexto.value.trim();
   } else if (tipoActual === "foto") {
     const archivo = inputFile.files[0];
-    if (!archivo) return alert("Selecciona una imagen ❗");
+    if (!archivo) return mostrarToast("Selecciona una imagen", "error");
     contenido = await comprimirImagen(archivo);
   } else {
     contenido = inputLink.value.trim();
   }
 
-  if (!contenido)    return alert("Escribe algo ❗");
-  if (!codigoPareja) return alert("Error: no se encontró tu código de pareja ❗");
+  if (!contenido)    return mostrarToast("Escribe algo primero", "error");
+  if (!codigoPareja) return mostrarToast("No se encontró tu código de pareja", "error");
 
   await guardarEnFirebase(contenido);
 };
@@ -191,16 +194,17 @@ guardar.onclick = async () => {
 async function guardarEnFirebase(contenido) {
   try {
     await addDoc(collection(db, "parejas", codigoPareja, "contenido"), {
-      tipo:     tipoActual,
+      tipo:      tipoActual,
       contenido: contenido,
-      fecha:    new Date()
+      fecha:     new Date()
     });
 
-    alert("Guardado 💖");
+    mostrarToast("¡Guardado! 💖", "exito");
     cerrarModal();
 
   } catch (error) {
-    alert("Error al guardar: " + error.message);
+    mostrarToast("Error al guardar, intenta de nuevo", "error");
+    console.error(error);
   }
 }
 
