@@ -10,6 +10,10 @@ const menuBtn         = document.getElementById('menuBtn');
 const sideMenu        = document.getElementById('sideMenu');
 const overlay         = document.getElementById('overlay');
 const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+const modalFoto       = document.getElementById('modalFoto');
+const imagenGrande    = document.getElementById('imagenGrande');
+const btnDescargar    = document.getElementById('btnDescargar');
+const btnCerrarFoto   = document.getElementById('btnCerrarFoto');
 
 // ===== SESIÓN =====
 let codigoPareja = null;
@@ -25,15 +29,13 @@ onAuthStateChanged(auth, async (user) => {
     const snap = await getDoc(doc(db, "usuarios", user.uid));
 
     if (snap.exists()) {
-      const data = snap.data();
-      codigoPareja = data.codigo;
-
-      document.getElementById("userName").textContent     = data.usuario;
-      document.getElementById("userNameMain").textContent = data.usuario;
-
-      pedirPermisoNotificaciones();
-      iniciarTiempoReal();
+      const datos = snap.data();
+      codigoPareja = datos.codigo;
+      document.getElementById("userName").textContent     = datos.usuario;
+      document.getElementById("userNameMain").textContent = datos.usuario;
     }
+
+    iniciarTiempoReal();
 
   } catch (error) {
     console.error("Error cargando usuario:", error);
@@ -68,42 +70,18 @@ document.querySelectorAll('.itemMenu').forEach(btn => {
   };
 });
 
-// ===== MODAL FOTO =====
+// ===== MODAL FOTO GRANDE =====
 window.abrirFoto = (src) => {
-  const modal     = document.getElementById("modalFoto");
-  const img       = document.getElementById("imagenGrande");
-  const descargar = document.getElementById("btnDescargar");
-  const cerrar    = document.getElementById("btnCerrarFoto");
-
-  if (!modal) return;
-
-  img.src        = src;
-  descargar.href = src;
-
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
-
-  cerrar.onclick = () => {
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
-  };
+  imagenGrande.src    = src;
+  btnDescargar.href   = src;
+  modalFoto.classList.remove('hidden');
+  modalFoto.classList.add('flex');
 };
 
-// ===== NOTIFICACIONES =====
-function pedirPermisoNotificaciones() {
-  if ("Notification" in window && Notification.permission === "default") {
-    Notification.requestPermission();
-  }
-}
-
-function mostrarNotificacion() {
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("💖 Daily Love", {
-      body: "Tu pareja acaba de publicar algo 💌",
-      icon: "DailyLove.png"
-    });
-  }
-}
+btnCerrarFoto.onclick = () => {
+  modalFoto.classList.add('hidden');
+  modalFoto.classList.remove('flex');
+};
 
 // ===== TIEMPO REAL =====
 function iniciarTiempoReal() {
@@ -111,19 +89,10 @@ function iniciarTiempoReal() {
   if (unsubscribe) unsubscribe();
 
   const ref = collection(db, "parejas", codigoPareja, "contenido");
-  let primeraCarga = true;
 
   unsubscribe = onSnapshot(ref, (snapshot) => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added" && !primeraCarga) {
-        mostrarNotificacion();
-      }
-    });
-
     const datos = [];
     snapshot.forEach(d => datos.push({ id: d.id, ...d.data() }));
-
-    primeraCarga = false;
 
     datos.sort((a, b) => {
       const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
@@ -216,7 +185,7 @@ function renderPorFecha(tipo, datos) {
         </div>
         <div id="${id}"
           class="space-y-3 overflow-hidden transition-all duration-500 ease-in-out ${esHoy ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}">
-          ${grupos[grupo].map(d => crearCard(d)).join("")}
+          ${datos.filter(d => obtenerGrupoFecha(d.fecha) === grupo).map(d => crearCard(d)).join("")}
         </div>
       </div>`;
   });
@@ -278,7 +247,8 @@ function renderInicio(datos) {
 function renderTodo(datos) {
   const tipos = ["mensaje", "foto", "cancion", "video", "frase"];
   tipos.forEach(tipo => {
-    renderPorFecha(tipo, datos.filter(d => d.tipo === tipo));
+    const filtrados = datos.filter(d => d.tipo === tipo);
+    renderPorFecha(tipo, filtrados);
   });
   renderInicio(datos);
 }

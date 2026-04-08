@@ -191,9 +191,9 @@ guardar.onclick = async () => {
 async function guardarEnFirebase(contenido) {
   try {
     await addDoc(collection(db, "parejas", codigoPareja, "contenido"), {
-      tipo:      tipoActual,
+      tipo:     tipoActual,
       contenido: contenido,
-      fecha:     new Date()
+      fecha:    new Date()
     });
 
     alert("Guardado 💖");
@@ -368,7 +368,8 @@ function renderInicio(datos) {
 function renderTodo(datos) {
   const tipos = ["mensaje", "foto", "cancion", "video", "frase"];
   tipos.forEach(tipo => {
-    renderPorFecha(tipo, datos.filter(d => d.tipo === tipo));
+    const filtrados = datos.filter(d => d.tipo === tipo);
+    renderPorFecha(tipo, filtrados);
   });
   renderInicio(datos);
 }
