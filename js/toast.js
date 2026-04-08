@@ -1,32 +1,40 @@
 // ===== TOAST =====
 function mostrarToast(mensaje, tipo = "exito") {
 
-  const colores = {
-    exito:   "bg-green-500 text-white",
-    error:   "bg-red-500 text-white",
-    info:    "bg-pink-500 text-white",
+  const estilos = {
+    exito: {
+      bg:     "bg-green-50 border border-green-500",
+      texto:  "text-green-700",
+      icono:  "✅"
+    },
+    error: {
+      bg:     "bg-red-50 border border-red-500",
+      texto:  "text-red-700",
+      icono:  "❗"
+    },
+    info: {
+      bg:     "bg-pink-50 border border-pink-500",
+      texto:  "text-pink-700",
+      icono:  "💖"
+    },
   };
 
-  const iconos = {
-    exito:  "✅",
-    error:  "❗",
-    info:   "💖",
-  };
+  const e = estilos[tipo];
 
   const toast = document.createElement("div");
-
   toast.className = `
     fixed bottom-6 left-1/2 -translate-x-1/2
-    ${colores[tipo]}
-    px-6 py-3 rounded-xl shadow-lg
-    flex items-center gap-2
+    ${e.bg} ${e.texto}
+    px-5 py-3 rounded-xl shadow-md
+    flex items-center gap-3
     text-sm font-semibold
     z-[9999]
     opacity-0 translate-y-4
     transition-all duration-300 ease-in-out
+    whitespace-nowrap
   `;
 
-  toast.innerHTML = `<span>${iconos[tipo]}</span><span>${mensaje}</span>`;
+  toast.innerHTML = `<span>${mensaje}</span><span>${e.icono}</span>`;
   document.body.appendChild(toast);
 
   setTimeout(() => {

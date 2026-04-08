@@ -7,21 +7,23 @@ import { doc, getDoc, collection, addDoc, onSnapshot }
 import { mostrarToast } from "./toast.js";
 
 // ===== ELEMENTOS =====
-const menuBtn         = document.getElementById('menuBtn');
-const sideMenu        = document.getElementById('sideMenu');
-const overlay         = document.getElementById('overlay');
-const modal           = document.getElementById('modal');
-const inputTexto      = document.getElementById('inputTexto');
-const inputLink       = document.getElementById('inputLink');
-const inputFile       = document.getElementById('inputFile');
-const previewImagen   = document.getElementById('previewImagen');
-const cancelar        = document.getElementById('cancelar');
-const guardar         = document.getElementById('guardar');
-const modalFoto       = document.getElementById('modalFoto');
-const imagenGrande    = document.getElementById('imagenGrande');
-const btnDescargar    = document.getElementById('btnDescargar');
-const btnCerrarFoto   = document.getElementById('btnCerrarFoto');
-const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+const menuBtn           = document.getElementById('menuBtn');
+const sideMenu          = document.getElementById('sideMenu');
+const overlay           = document.getElementById('overlay');
+const modal             = document.getElementById('modal');
+const inputTexto        = document.getElementById('inputTexto');
+const inputCancionDiv   = document.getElementById('inputCancionDiv');
+const inputDescCancion  = document.getElementById('inputDescCancion');
+const inputLinkCancion  = document.getElementById('inputLinkCancion');
+const inputFile         = document.getElementById('inputFile');
+const previewImagen     = document.getElementById('previewImagen');
+const cancelar          = document.getElementById('cancelar');
+const guardar           = document.getElementById('guardar');
+const modalFoto         = document.getElementById('modalFoto');
+const imagenGrande      = document.getElementById('imagenGrande');
+const btnDescargar      = document.getElementById('btnDescargar');
+const btnCerrarFoto     = document.getElementById('btnCerrarFoto');
+const btnCerrarSesion   = document.getElementById('btnCerrarSesion');
 
 // ===== SESIÓN =====
 let codigoPareja = null;
@@ -41,7 +43,6 @@ onAuthStateChanged(auth, async (user) => {
       codigoPareja = datos.codigo;
       document.getElementById("userName").textContent     = datos.usuario;
       document.getElementById("userNameMain").textContent = datos.usuario;
-
       mostrarToast(`¡Bienvenido ${datos.usuario}! 💖`, "info");
     }
 
@@ -86,20 +87,24 @@ let tipoActual = "";
 window.abrirModal = (tipo) => {
   tipoActual = tipo;
 
+  // Ocultar todo
   inputTexto.classList.add('hidden');
-  inputLink.classList.add('hidden');
+  inputCancionDiv.classList.add('hidden');
   inputFile.classList.add('hidden');
   previewImagen.classList.add('hidden');
-  inputTexto.value = "";
-  inputLink.value  = "";
-  inputFile.value  = "";
+
+  // Limpiar
+  inputTexto.value       = "";
+  inputDescCancion.value = "";
+  inputLinkCancion.value = "";
+  inputFile.value        = "";
 
   if (tipo === "mensaje" || tipo === "frase") {
     inputTexto.classList.remove('hidden');
+  } else if (tipo === "cancion") {
+    inputCancionDiv.classList.remove('hidden');
   } else if (tipo === "foto") {
     inputFile.classList.remove('hidden');
-  } else {
-    inputLink.classList.remove('hidden');
   }
 
   modal.classList.remove('hidden');
@@ -176,15 +181,21 @@ guardar.onclick = async () => {
 
   if (tipoActual === "mensaje" || tipoActual === "frase") {
     contenido = inputTexto.value.trim();
+    if (!contenido) return mostrarToast("Escribe algo primero", "error");
+
+  } else if (tipoActual === "cancion") {
+    const desc = inputDescCancion.value.trim();
+    const link = inputLinkCancion.value.trim();
+    if (!desc) return mostrarToast("Escribe una dedicatoria", "error");
+    if (!link) return mostrarToast("Pega el link de la canción", "error");
+    contenido = JSON.stringify({ desc, link });
+
   } else if (tipoActual === "foto") {
     const archivo = inputFile.files[0];
     if (!archivo) return mostrarToast("Selecciona una imagen", "error");
     contenido = await comprimirImagen(archivo);
-  } else {
-    contenido = inputLink.value.trim();
   }
 
-  if (!contenido)    return mostrarToast("Escribe algo primero", "error");
   if (!codigoPareja) return mostrarToast("No se encontró tu código de pareja", "error");
 
   await guardarEnFirebase(contenido);
@@ -232,15 +243,11 @@ function iniciarTiempoReal() {
 // ===== FECHAS =====
 function obtenerGrupoFecha(fecha) {
   const f = fecha?.toDate ? fecha.toDate() : new Date(fecha);
-
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
-
   const fechaItem = new Date(f);
   fechaItem.setHours(0, 0, 0, 0);
-
   const diff = Math.floor((hoy - fechaItem) / (1000 * 60 * 60 * 24));
-
   if (diff === 0) return "Hoy";
   if (diff === 1) return "Ayer";
   return f.toLocaleDateString('es-MX');
@@ -258,21 +265,38 @@ function crearCard(d) {
       <p class="text-gray-700 text-lg">"${d.contenido}"</p>
     </div>`;
   }
+
   if (d.tipo === "foto") {
     return `<div class="bg-white shadow-lg rounded-xl p-3 cursor-pointer" onclick="abrirFoto('${d.contenido}')">
       <img src="${d.contenido}" alt="Foto" class="w-full h-48 object-cover rounded-lg hover:opacity-90 transition">
     </div>`;
   }
+
   if (d.tipo === "cancion") {
-    return `<div class="bg-white shadow-lg rounded-xl p-5">
-      <a href="${d.contenido}" target="_blank" class="text-pink-500 hover:underline">Escuchar 💖</a>
-    </div>`;
+    let desc = "", link = "";
+    try {
+      const parsed = JSON.parse(d.contenido);
+      desc = parsed.desc;
+      link = parsed.link;
+    } catch {
+      link = d.contenido;
+    }
+    return `
+      <div class="bg-white shadow-lg rounded-xl p-5">
+        ${desc ? `<p class="text-gray-700 text-base mb-3">"${desc}"</p>` : ""}
+        <div class="flex items-center justify-between">
+          <a href="${link}" target="_blank"
+            class="text-sky-500 hover:underline text-sm truncate max-w-[70%]">
+            ${link}
+          </a>
+          <a href="${link}" target="_blank"
+            class="ml-2 px-3 py-1.5 bg-sky-400 hover:bg-sky-500 text-white text-sm rounded-lg transition whitespace-nowrap">
+            Escuchar ▶
+          </a>
+        </div>
+      </div>`;
   }
-  if (d.tipo === "video") {
-    return `<div class="bg-white shadow-lg rounded-xl p-5">
-      <a href="${d.contenido}" target="_blank" class="text-pink-500 hover:underline">Ver video 🎥</a>
-    </div>`;
-  }
+
   return "";
 }
 
@@ -282,7 +306,6 @@ function renderPorFecha(tipo, datos) {
     mensaje: "#mensajesContainer",
     foto:    "#fotosContainer",
     cancion: "#cancionesContainer",
-    video:   "#videosContainer",
     frase:   "#frasesContainer"
   };
 
@@ -350,12 +373,11 @@ function renderInicio(datos) {
 
   const mensajes  = datos.filter(d => d.tipo === "mensaje").slice(0, 3);
   const fotos     = datos.filter(d => d.tipo === "foto").slice(0, 4);
-  const canciones = datos.filter(d => d.tipo === "cancion").slice(0, 3);
-  const videos    = datos.filter(d => d.tipo === "video").slice(0, 3);
+  const canciones = datos.filter(d => d.tipo === "cancion").slice(0, 4);
   const frases    = datos.filter(d => d.tipo === "frase").slice(0, 3);
 
   setHTML(".listaMensajes",
-    mensajes.map(m => `<li>"${m.contenido}" - ${formatearFechaCorta(m.fecha)}</li>`).join("")
+    mensajes.map(m => `<li class="text-gray-700 text-sm mb-1">"${m.contenido}" - ${formatearFechaCorta(m.fecha)}</li>`).join("")
   );
   setHTML(".listaFotos",
     fotos.map(f => `
@@ -365,22 +387,34 @@ function renderInicio(datos) {
     ).join("")
   );
   setHTML(".listaCanciones",
-    canciones.map(c => `<li><a href="${c.contenido}" target="_blank" class="text-pink-500 hover:underline">Escuchar 💖</a></li>`).join("")
-  );
-  setHTML(".listaVideos",
-    videos.map(v => `<li><a href="${v.contenido}" target="_blank" class="text-pink-500 hover:underline">Ver 🎥</a></li>`).join("")
+    canciones.map(c => {
+      let desc = "", link = "";
+      try {
+        const p = JSON.parse(c.contenido);
+        desc = p.desc;
+        link = p.link;
+      } catch {
+        link = c.contenido;
+      }
+      return `
+        <li class="mb-2">
+          ${desc ? `<p class="text-gray-600 text-sm">"${desc}"</p>` : ""}
+          <a href="${link}" target="_blank" class="text-sky-500 hover:underline text-sm">
+            ${link.length > 35 ? link.substring(0, 35) + "..." : link}
+          </a>
+        </li>`;
+    }).join("")
   );
   setHTML(".listaFrases",
-    frases.map(f => `<li>"${f.contenido}"</li>`).join("")
+    frases.map(f => `<li class="text-gray-700 text-sm mb-1">"${f.contenido}"</li>`).join("")
   );
 }
 
 // ===== RENDER TODO =====
 function renderTodo(datos) {
-  const tipos = ["mensaje", "foto", "cancion", "video", "frase"];
+  const tipos = ["mensaje", "foto", "cancion", "frase"];
   tipos.forEach(tipo => {
-    const filtrados = datos.filter(d => d.tipo === tipo);
-    renderPorFecha(tipo, filtrados);
+    renderPorFecha(tipo, datos.filter(d => d.tipo === tipo));
   });
   renderInicio(datos);
 }
