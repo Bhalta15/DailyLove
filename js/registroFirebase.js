@@ -7,7 +7,7 @@ import { GoogleAuthProvider, signInWithPopup,
 import { auth, db } from "./firebase.js";
 
 import { setDoc, getDoc, doc, collection, query, where, getDocs }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { mostrarToast } from "./toast.js";
 
@@ -17,6 +17,8 @@ const btnIniciar   = document.getElementById("btnIniciar");
 const btnGoogle    = document.getElementById("btnGoogle");
 
 // ===== ERRORES INLINE =====
+
+// Campos en orden para registro y login
 const camposRegistro = ["usuario", "email", "password", "codigo"];
 const camposLogin    = ["loginEmail", "loginPassword"];
 
@@ -24,7 +26,9 @@ function mostrarPrimerError(campos) {
   for (const id of campos) {
     const input = document.getElementById(id);
     if (!input) continue;
+
     if (input.offsetParent === null) continue;
+
     const valor = input.value.trim();
     if (!valor) {
       mostrarErrorInline(id, mensajeVacio(id));
@@ -49,11 +53,14 @@ function mensajeVacio(id) {
 
 function mostrarErrorInline(inputId, mensaje) {
   limpiarError(inputId);
+
   const input   = document.getElementById(inputId);
   const errorEl = document.createElement("p");
-  errorEl.id          = `error-${inputId}`;
-  errorEl.className   = "text-red-500 text-xs mt-0.5 ml-1";
+
+  errorEl.id        = `error-${inputId}`;
+  errorEl.className = "text-red-500 text-xs mt-0.5 ml-1";
   errorEl.textContent = mensaje;
+
   input.classList.add("border-red-400");
   input.parentNode.insertBefore(errorEl, input.nextSibling);
 }
@@ -61,6 +68,7 @@ function mostrarErrorInline(inputId, mensaje) {
 function limpiarError(inputId) {
   const viejo = document.getElementById(`error-${inputId}`);
   if (viejo) viejo.remove();
+
   const input = document.getElementById(inputId);
   if (input) input.classList.remove("border-red-400");
 }
@@ -69,19 +77,16 @@ function limpiarTodos() {
   [...camposRegistro, ...camposLogin].forEach(id => limpiarError(id));
 }
 
-// ===== VERIFICAR SI EL CÓDIGO YA TIENE 2 USUARIOS =====
-async function codigoEstaLleno(codigo) {
-  const q = query(collection(db, "usuarios"), where("codigo", "==", codigo));
-  const snap = await getDocs(q);
-  return snap.size >= 2;
-}
-
 // ===== REGISTRO =====
 btnRegistrar.addEventListener("click", async () => {
   limpiarTodos();
 
   if (mostrarPrimerError(camposRegistro)) return;
-  if (!window.rol) return mostrarToast("Selecciona un rol primero", "error");
+
+  if (!window.rol) {
+    mostrarToast("Selecciona un rol primero", "error");
+    return;
+  }
 
   const usuario  = document.getElementById("usuario").value.trim();
   const email    = document.getElementById("email").value.trim();
@@ -89,14 +94,6 @@ btnRegistrar.addEventListener("click", async () => {
   const codigo   = document.getElementById("codigo").value.trim();
 
   try {
-    // 🔥 PRIMERO verificar si el código ya tiene 2 usuarios
-    const lleno = await codigoEstaLleno(codigo);
-    if (lleno) {
-      mostrarErrorInline("codigo", "Este código ya está completo 💔");
-      return;
-    }
-
-    // 🔥 Ahora sí crear el usuario
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
@@ -109,19 +106,26 @@ btnRegistrar.addEventListener("click", async () => {
       codigo:  codigo
     });
 
-    // 🔥 Buscar si ya hay alguien con ese código para crear la pareja
+    // 🔥 BUSCAR SI YA EXISTE ALGUIEN CON ESE CODIGO
     const q = query(collection(db, "usuarios"), where("codigo", "==", codigo));
     const querySnapshot = await getDocs(q);
 
-    querySnapshot.forEach(async (docSnap) => {
-      if (docSnap.id !== user.uid) {
-        await setDoc(doc(db, "parejas", codigo), {
-          usuarios:      [user.uid, docSnap.id],
-          fechaCreacion: new Date()
-        });
-        console.log("Pareja creada 💖");
-      }
-    });
+    if (!querySnapshot.empty) {
+      querySnapshot.forEach(async (docSnap) => {
+        if (docSnap.id !== user.uid) {
+
+          const uidPareja = docSnap.id;
+
+          // 🔥 CREAR PAREJA AUTOMÁTICAMENTE
+          await setDoc(doc(db, "parejas", codigo), {
+            usuarios: [user.uid, uidPareja],
+            fechaCreacion: new Date()
+          });
+
+          console.log("Pareja creada automáticamente 💖");
+        }
+      });
+    }
 
     mostrarToast("Te enviamos un correo para verificar tu cuenta 💌", "info");
     setTimeout(() => window.location.href = "registro.html", 2500);
@@ -172,10 +176,6 @@ btnGoogle.addEventListener("click", async () => {
   const codigo = document.getElementById("codigo").value.trim();
   if (!codigo)  return mostrarToast("Agrega un código", "error");
 
-  // 🔥 Verificar código antes de abrir popup de Google
-  const lleno = await codigoEstaLleno(codigo);
-  if (lleno) return mostrarErrorInline("codigo", "Este código ya está completo 💔");
-
   const provider = new GoogleAuthProvider();
 
   try {
@@ -190,20 +190,6 @@ btnGoogle.addEventListener("click", async () => {
         email:   user.email,
         rol:     window.rol,
         codigo:  codigo
-      });
-
-      // 🔥 Buscar pareja y crearla
-      const q = query(collection(db, "usuarios"), where("codigo", "==", codigo));
-      const querySnapshot = await getDocs(q);
-
-      querySnapshot.forEach(async (docSnap) => {
-        if (docSnap.id !== user.uid) {
-          await setDoc(doc(db, "parejas", codigo), {
-            usuarios:      [user.uid, docSnap.id],
-            fechaCreacion: new Date()
-          });
-          console.log("Pareja creada con Google 💖");
-        }
       });
     }
 
