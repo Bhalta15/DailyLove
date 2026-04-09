@@ -6,17 +6,14 @@
   <title>Registro - Daily Love</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#EC4899">
-   <!-- PWA en iPhone -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Daily Love">
-<!-- Icono para iPhone -->
-<link rel="apple-touch-icon" href="DailyLoveN.png">
+  <meta name="theme-color" content="#EC4899">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Daily Love">
+  <link rel="apple-touch-icon" href="DailyLoveN.png">
 </head>
 <body class="min-h-screen flex">
- 
 
   <!-- IZQUIERDA -->
   <div class="hidden md:flex w-1/2">
@@ -38,13 +35,13 @@
         </h2>
 
         <input type="text" id="usuario" placeholder="Usuario"
-          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" required>
+          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
 
         <input type="email" id="email" placeholder="Correo"
-          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" required>
+          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
 
         <input type="password" id="password" placeholder="Contraseña"
-          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" required>
+          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
 
         <!-- ROLES -->
         <div class="flex gap-4 mt-2">
@@ -64,26 +61,20 @@
             Conéctate con tu pareja 💖
           </label>
           <div class="relative">
-            <input type="text" id="codigo"
-              placeholder="Escribe tu código o genéralo"
-              class="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
-            <button type="button" id="btnGenerar"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-pink-500">
-              🎲
-            </button>
-          </div>
-          <p id="codigoMsg" class="text-xs text-gray-500 mt-1"></p>
+  <input type="text" id="codigo"
+    placeholder="Escribe tu código o genéralo"
+    class="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+  <button type="button" id="btnGenerar"
+    class="absolute right-2 inset-y-0 my-auto h-fit text-gray-500 hover:text-pink-500">
+    🎲
+  </button>
+</div>
+<p id="codigoMsg" class="text-xs text-gray-500 mt-1"></p>
         </div>
 
         <button type="button" id="btnRegistrar"
           class="mt-2 px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition">
           Registrar
-        </button>
-
-        <button type="button" id="btnGoogle"
-          class="w-full px-4 py-2 bg-white border rounded-lg hover:bg-gray-100 flex items-center justify-center gap-2 transition">
-          <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="Google">
-          Continuar con Google
         </button>
 
         <p class="text-center text-gray-600 mt-2">
@@ -103,10 +94,10 @@
         </h2>
 
         <input type="email" id="loginEmail" placeholder="Correo"
-          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" required>
+          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
 
         <input type="password" id="loginPassword" placeholder="Contraseña"
-          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" required>
+          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
 
         <button type="button" id="btnIniciar"
           class="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition">
