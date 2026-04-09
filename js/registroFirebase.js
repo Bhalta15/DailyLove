@@ -116,6 +116,19 @@ btnRegistrar.addEventListener("click", async () => {
 
           const uidPareja = docSnap.id;
 
+          // 🔐 VALIDAR SI YA EXISTE LA PAREJA
+          const parejaRef = doc(db, "parejas", codigo);
+          const parejaSnap = await getDoc(parejaRef);
+
+          if (parejaSnap.exists()) {
+            const datos = parejaSnap.data();
+
+            if (datos.usuarios.length >= 2) {
+              mostrarToast("Este código ya está en uso 💔", "error");
+              return;
+            }
+          }
+
           // 🔥 CREAR PAREJA AUTOMÁTICAMENTE
           await setDoc(doc(db, "parejas", codigo), {
             usuarios: [user.uid, uidPareja],
