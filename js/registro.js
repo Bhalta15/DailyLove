@@ -12,31 +12,6 @@ const inputCodigo  = document.getElementById("codigo");
 const msg          = document.getElementById("codigoMsg");
 const btnGenerar   = document.getElementById("btnGenerar");
 
-// ===== CAMPOS GOOGLE =====
-const inputEmail    = document.getElementById("email");
-const inputPassword = document.getElementById("password");
-const btnGoogle     = document.getElementById("btnGoogle");
-
-btnGoogle.addEventListener("click", () => {
-  const activo = inputEmail.disabled;
-
-  if (!activo) {
-    // Desactivar campos no necesarios para Google
-    inputEmail.disabled    = true;
-    inputPassword.disabled = true;
-    inputEmail.classList.add("opacity-40", "cursor-not-allowed");
-    inputPassword.classList.add("opacity-40", "cursor-not-allowed");
-    btnGoogle.classList.add("ring-2", "ring-pink-400");
-  } else {
-    // Reactivar si vuelve a hacer click
-    inputEmail.disabled    = false;
-    inputPassword.disabled = false;
-    inputEmail.classList.remove("opacity-40", "cursor-not-allowed");
-    inputPassword.classList.remove("opacity-40", "cursor-not-allowed");
-    btnGoogle.classList.remove("ring-2", "ring-pink-400");
-  }
-});
-
 // ===== CAMBIO LOGIN / REGISTER =====
 btnLogin.onclick = () => {
   registerForm.classList.add("hidden");
@@ -68,8 +43,8 @@ function setRolActivo(rolSeleccionado) {
   btnActivo.classList.add("bg-pink-500", "text-white");
 
   codigoDiv.classList.remove("hidden");
-  inputCodigo.value  = "";
-  msg.textContent    = "";
+  inputCodigo.value = "";
+  msg.textContent   = "";
 }
 
 rolEnviara.onclick = () => {

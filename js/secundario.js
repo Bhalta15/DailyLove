@@ -43,7 +43,7 @@ onAuthStateChanged(auth, async (user) => {
       codigoPareja = datos.codigo;
       document.getElementById("userName").textContent     = datos.usuario;
       document.getElementById("userNameMain").textContent = datos.usuario;
-      mostrarToast(`¡Bienvenido ${datos.usuario}! 💖`, "info");
+      mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
     }
 
     iniciarTiempoReal();
@@ -87,13 +87,11 @@ let tipoActual = "";
 window.abrirModal = (tipo) => {
   tipoActual = tipo;
 
-  // Ocultar todo
   inputTexto.classList.add('hidden');
   inputCancionDiv.classList.add('hidden');
   inputFile.classList.add('hidden');
   previewImagen.classList.add('hidden');
 
-  // Limpiar
   inputTexto.value       = "";
   inputDescCancion.value = "";
   inputLinkCancion.value = "";
@@ -210,11 +208,11 @@ async function guardarEnFirebase(contenido) {
       fecha:     new Date()
     });
 
-    mostrarToast("¡Guardado! 💖", "exito");
+    mostrarToast("¡Guardado!", "exito");
     cerrarModal();
 
   } catch (error) {
-    mostrarToast("Error al guardar, intenta de nuevo", "error");
+    mostrarToast("Tu pareja aún no se ha registrado, intenta más tarde", "info");
     console.error(error);
   }
 }
