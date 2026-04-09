@@ -127,7 +127,7 @@ btnRegistrar.addEventListener("click", async () => {
       });
     }
 
-    mostrarToast("Te enviamos un correo para verificar tu cuenta 💌", "info");
+    mostrarToast("Te enviamos un correo para verificar tu cuenta", "info");
     setTimeout(() => window.location.href = "registro.html", 2500);
 
   } catch (error) {
@@ -149,7 +149,7 @@ btnIniciar.addEventListener("click", async () => {
     const user = userCredential.user;
 
     if (!user.emailVerified) {
-      mostrarToast("Verifica tu correo primero 💌", "error");
+      mostrarToast("Verifica tu correo primero", "error");
       return;
     }
 
