@@ -14,6 +14,7 @@ let unsubscribe   = null;
 let cardActual    = null; // card seleccionada con long press
 let docActual     = null; // documento de Firestore de la card seleccionada
 let timerPress    = null;
+let gruposAbiertos = {};
 
 // ===== ELEMENTOS =====
 const menuBtn          = document.getElementById('menuBtn');
@@ -285,16 +286,20 @@ async function toggleReaccion(d, cardEl) {
 function agregarDobleTap(el, d) {
   let lastTap = 0;
 
-  el.addEventListener("click", () => {
+  const handler = (e) => {
+    e.stopPropagation(); // 🔥 EVITA que llegue al toggleGrupo
+
     const now = Date.now();
 
     if (now - lastTap < 300) {
-      // DOBLE TAP detectado
       toggleReaccion(d, el);
     }
 
     lastTap = now;
-  });
+  };
+
+  el.addEventListener("touchend", handler);
+  el.addEventListener("click", handler);
 }
 
 // ===== EDITAR =====
@@ -591,10 +596,12 @@ window.toggleGrupo = (id, el) => {
     contenedor.classList.remove("max-h-[2000px]", "opacity-100");
     contenedor.classList.add("max-h-0", "opacity-0");
     if (flecha) flecha.style.transform = "rotate(-90deg)";
+    gruposAbiertos[id] = false; // 🔥 guardar estado
   } else {
     contenedor.classList.remove("max-h-0", "opacity-0");
     contenedor.classList.add("max-h-[2000px]", "opacity-100");
     if (flecha) flecha.style.transform = "rotate(0deg)";
+    gruposAbiertos[id] = true; // 🔥 guardar estado
   }
 };
 
