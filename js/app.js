@@ -275,7 +275,9 @@ async function toggleReaccion(d) {
     const yaReacciono = d.reacciones?.[miUid];
 
     await updateDoc(ref, {
-      [`reacciones.${miUid}`]: yaReacciono ? false : true
+      [`reacciones.${miUid}`]: yaReacciono
+        ? null
+        : miGenero
     });
 
   } catch (error) {
@@ -285,35 +287,29 @@ async function toggleReaccion(d) {
 
 function agregarDobleTap(el, d) {
   let lastTap = 0;
-  let tapTimeout = null;
+
+  const ejecutar = (e) => {
+    e.stopPropagation();
+    toggleReaccion(d);
+  };
 
   const handler = (e) => {
-    e.stopPropagation();
-
     const now = Date.now();
     const diff = now - lastTap;
 
     if (diff < 300 && diff > 0) {
-      clearTimeout(tapTimeout);
-
-      // DOBLE TAP CONFIRMADO 💖
-      toggleReaccion(d);
-
       lastTap = 0;
+      ejecutar(e);
     } else {
       lastTap = now;
-
-      tapTimeout = setTimeout(() => {
-        lastTap = 0;
-      }, 350);
     }
   };
 
-  // móvil
+  // 📱 móvil
   el.addEventListener("touchend", handler, { passive: true });
 
-  // PC (mouse)
-  el.addEventListener("click", handler);
+  // 💻 PC
+  el.addEventListener("dblclick", ejecutar);
 }
 
 // ===== EDITAR =====
@@ -467,13 +463,15 @@ function brilloClass(d) {
 
 // ===== REACCIÓN HEART =====
 function heartClass(d) {
-  const reacciono = d.reacciones?.[miUid];
+  const reacciones = d.reacciones || {};
 
-  if (!reacciono) return "";
+  const usuarios = Object.entries(reacciones);
 
-  return miGenero === "hombre"
-    ? "💙"
-    : "❤️";
+  if (usuarios.length === 0) return "";
+
+  const [uid, genero] = usuarios[0];
+
+  return genero === "hombre" ? "💙" : "❤️";
 }
 
 // ===== LONG PRESS EN CARDS =====
