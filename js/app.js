@@ -143,12 +143,13 @@ function cerrarModal() {
 cancelar.onclick = cerrarModal;
 
 // ===== MODAL FOTO GRANDE =====
-window.abrirFoto = (src) => {
+// PUNTO 2: ya no es window.abrirFoto, es función local llamada via addEventListener
+function abrirFoto(src) {
   imagenGrande.src  = src;
   btnDescargar.href = src;
   modalFoto.classList.remove('hidden');
   modalFoto.classList.add('flex');
-};
+}
 
 btnCerrarFoto.onclick = () => {
   modalFoto.classList.add('hidden');
@@ -383,6 +384,7 @@ function heartClass(d) {
 }
 
 // ===== CREAR CARD =====
+// PUNTO 3: imagen de foto sin onclick inline, el evento se asigna en renderPorFecha
 function crearCardHTML(d) {
   const borde   = borderPorGenero(d.autorGenero);
   const corazon = heartClass(d);
@@ -401,8 +403,7 @@ function crearCardHTML(d) {
       <div data-id="${d.id}"
         class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none">
         <img src="${d.contenido}" alt="Foto"
-          class="w-full h-48 object-cover rounded-lg hover:opacity-90 transition cursor-pointer"
-          onclick="abrirFoto('${d.contenido}')">
+          class="w-full h-48 object-cover rounded-lg hover:opacity-90 transition cursor-pointer">
         ${corazon ? `<span class="absolute bottom-1 right-1 text-lg">${corazon}</span>` : ""}
       </div>`;
   }
@@ -453,9 +454,9 @@ function renderPorFecha(tipo, datos) {
 
   let html = "";
   Object.keys(grupos).forEach((grupo, index) => {
-    const id             = `grupo-${tipo}-${index}`;
+    const id              = `grupo-${tipo}-${index}`;
     const abiertoGuardado = gruposAbiertos[id];
-    const esHoy          = grupo === "Hoy" || abiertoGuardado;
+    const esHoy           = grupo === "Hoy" || abiertoGuardado;
 
     html += `
       <div class="mt-4">
@@ -476,10 +477,19 @@ function renderPorFecha(tipo, datos) {
 
   cont.innerHTML = html;
 
-  // Asignar doble tap a cada card
+  // Asignar eventos a cada card
   datos.forEach(d => {
     const cardEl = cont.querySelector(`[data-id="${d.id}"]`);
-    if (cardEl) agregarDobleTap(cardEl, d);
+    if (!cardEl) return;
+
+    // Doble tap / doble click para reacción
+    agregarDobleTap(cardEl, d);
+
+    // PUNTO 3: addEventListener para abrir foto en lugar de onclick inline
+    if (d.tipo === "foto") {
+      const imgEl = cardEl.querySelector("img");
+      if (imgEl) imgEl.addEventListener("click", () => abrirFoto(d.contenido));
+    }
   });
 }
 
@@ -516,13 +526,18 @@ function renderInicio(datos) {
   setHTML(".listaMensajes",
     mensajes.map(m => `<li class="text-gray-700 text-sm mb-1">"${m.contenido}" - ${formatearFechaCorta(m.fecha)}</li>`).join("")
   );
-  setHTML(".listaFotos",
-    fotos.map(f => `
-      <img src="${f.contenido}" alt="Foto"
-        class="rounded-lg w-full h-32 object-cover cursor-pointer hover:opacity-90 transition"
-        onclick="abrirFoto('${f.contenido}')">`
-    ).join("")
-  );
+
+  // PUNTO 2: fotos del inicio también con addEventListener
+  document.querySelectorAll(".listaFotos").forEach(el => {
+    el.innerHTML = fotos.map((f, i) => `
+      <img data-foto-idx="${i}" src="${f.contenido}" alt="Foto"
+        class="rounded-lg w-full h-32 object-cover cursor-pointer hover:opacity-90 transition">`
+    ).join("");
+    el.querySelectorAll("img").forEach((img, i) => {
+      img.addEventListener("click", () => abrirFoto(fotos[i].contenido));
+    });
+  });
+
   setHTML(".listaCanciones",
     canciones.map(c => {
       let desc = "", link = "";
