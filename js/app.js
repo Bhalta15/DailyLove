@@ -143,7 +143,6 @@ function cerrarModal() {
 cancelar.onclick = cerrarModal;
 
 // ===== MODAL FOTO GRANDE =====
-// PUNTO 2: ya no es window.abrirFoto, es función local llamada via addEventListener
 function abrirFoto(src) {
   imagenGrande.src  = src;
   btnDescargar.href = src;
@@ -299,7 +298,7 @@ guardarEditar.onclick = async () => {
   }
 };
 
-// ===== REACCIONAR (doble tap / doble click) =====
+// ===== REACCIONAR =====
 async function toggleReaccion(d) {
   if (d.autorUid === miUid) {
     mostrarToast("No puedes reaccionar a tu propio contenido", "info");
@@ -314,20 +313,92 @@ async function toggleReaccion(d) {
   });
 }
 
+// ===== MENÚ DOBLE TAP =====
+let menuAbierto = null; // referencia al menú actualmente visible
+
+function cerrarMenuCard() {
+  if (menuAbierto) {
+    menuAbierto.remove();
+    menuAbierto = null;
+  }
+}
+
+// Cierra el menú si se toca/clica fuera de él
+document.addEventListener("click", (e) => {
+  if (menuAbierto && !menuAbierto.contains(e.target)) {
+    cerrarMenuCard();
+  }
+});
+document.addEventListener("touchstart", (e) => {
+  if (menuAbierto && !menuAbierto.contains(e.target)) {
+    cerrarMenuCard();
+  }
+}, { passive: true });
+
+function mostrarMenuCard(cardEl, d) {
+  // Si ya hay uno abierto, cerrarlo primero
+  cerrarMenuCard();
+
+  const esMio = d.autorUid === miUid;
+
+  const menu = document.createElement("div");
+  menu.className = [
+    "absolute top-2 right-2 z-30",
+    "bg-white border border-gray-200 rounded-xl shadow-lg",
+    "flex flex-col overflow-hidden",
+    "text-sm"
+  ].join(" ");
+
+  // Botón "Me encanta" — solo si el contenido no es mío
+  if (!esMio) {
+    const btnReaccion = document.createElement("button");
+    const yaReacciono = d.reaccion === miGenero;
+    btnReaccion.textContent = yaReacciono ? "💔 Quitar reacción" : "🤍 Me encanta";
+    btnReaccion.className = "px-4 py-2 hover:bg-pink-50 text-left text-gray-700 whitespace-nowrap";
+    btnReaccion.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      cerrarMenuCard();
+      await toggleReaccion(d);
+    });
+    menu.appendChild(btnReaccion);
+  }
+
+  // Botón "Editar" — solo si el contenido es mío y no es foto
+  if (esMio && d.tipo !== "foto") {
+    const btnEditar = document.createElement("button");
+    btnEditar.textContent = "✏️ Editar";
+    btnEditar.className = "px-4 py-2 hover:bg-pink-50 text-left text-gray-700 whitespace-nowrap";
+    btnEditar.addEventListener("click", (e) => {
+      e.stopPropagation();
+      cerrarMenuCard();
+      abrirModalEditar(d);
+    });
+    menu.appendChild(btnEditar);
+  }
+
+  // Si el menú no tiene opciones (ej: foto propia), no mostrar nada
+  if (menu.children.length === 0) return;
+
+  cardEl.style.position = "relative";
+  cardEl.appendChild(menu);
+  menuAbierto = menu;
+}
+
 function agregarDobleTap(el, d) {
   let lastTap = 0;
 
-  const handler = () => {
+  const handler = (e) => {
+    e.stopPropagation();
     const now = Date.now();
     if (now - lastTap < 300) {
       lastTap = 0;
-      toggleReaccion(d);
+      mostrarMenuCard(el, d);
     } else {
       lastTap = now;
     }
   };
 
-  el.addEventListener("touchend", handler, { passive: true });
+  el.addEventListener("touchend", handler, { passive: false });
   el.addEventListener("dblclick", handler);
 }
 
@@ -377,24 +448,32 @@ function borderPorGenero(genero) {
     : "border-2 border-pink-300";
 }
 
-// ===== CORAZÓN SEGÚN GÉNERO DE QUIEN REACCIONÓ =====
-function heartClass(d) {
+// ===== CORAZÓN SVG CONTORNO SEGÚN GÉNERO =====
+// Punto 1: SVG contorno, sin relleno, color según género de quien reaccionó
+// Posición: superior derecho (top-2 right-2)
+function heartSVG(d) {
   if (!d.reaccion) return "";
-  return d.reaccion === "hombre" ? "🩵" : "🩷";
+  const color = d.reaccion === "hombre" ? "#93c5fd" : "#f9a8d4"; // blue-300 / pink-300
+  return `
+    <span class="absolute top-2 right-2 pointer-events-none">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+        fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </span>`;
 }
 
 // ===== CREAR CARD =====
-// PUNTO 3: imagen de foto sin onclick inline, el evento se asigna en renderPorFecha
 function crearCardHTML(d) {
   const borde   = borderPorGenero(d.autorGenero);
-  const corazon = heartClass(d);
+  const corazon = heartSVG(d);
 
   if (d.tipo === "mensaje" || d.tipo === "frase") {
     return `
       <div data-id="${d.id}"
         class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none">
         <p class="text-gray-700 text-lg">"${d.contenido}"</p>
-        ${corazon ? `<span class="absolute bottom-1 right-1 text-lg">${corazon}</span>` : ""}
+        ${corazon}
       </div>`;
   }
 
@@ -404,7 +483,7 @@ function crearCardHTML(d) {
         class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none">
         <img src="${d.contenido}" alt="Foto"
           class="w-full h-48 object-cover rounded-lg hover:opacity-90 transition cursor-pointer">
-        ${corazon ? `<span class="absolute bottom-1 right-1 text-lg">${corazon}</span>` : ""}
+        ${corazon}
       </div>`;
   }
 
@@ -426,7 +505,7 @@ function crearCardHTML(d) {
             Escuchar ▶
           </a>
         </div>
-        ${corazon ? `<span class="absolute bottom-1 right-1 text-lg">${corazon}</span>` : ""}
+        ${corazon}
       </div>`;
   }
 
@@ -482,10 +561,10 @@ function renderPorFecha(tipo, datos) {
     const cardEl = cont.querySelector(`[data-id="${d.id}"]`);
     if (!cardEl) return;
 
-    // Doble tap / doble click para reacción
+    // Doble tap para mostrar menú
     agregarDobleTap(cardEl, d);
 
-    // PUNTO 3: addEventListener para abrir foto en lugar de onclick inline
+    // Click en imagen de foto
     if (d.tipo === "foto") {
       const imgEl = cardEl.querySelector("img");
       if (imgEl) imgEl.addEventListener("click", () => abrirFoto(d.contenido));
@@ -527,7 +606,6 @@ function renderInicio(datos) {
     mensajes.map(m => `<li class="text-gray-700 text-sm mb-1">"${m.contenido}" - ${formatearFechaCorta(m.fecha)}</li>`).join("")
   );
 
-  // PUNTO 2: fotos del inicio también con addEventListener
   document.querySelectorAll(".listaFotos").forEach(el => {
     el.innerHTML = fotos.map((f, i) => `
       <img data-foto-idx="${i}" src="${f.contenido}" alt="Foto"
