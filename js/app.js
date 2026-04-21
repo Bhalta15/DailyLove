@@ -252,11 +252,11 @@ function abrirModalEditar(d) {
   editFile.value         = "";
 
   if (d.tipo === "mensaje" || d.tipo === "frase") {
-    modalEditarTitulo.textContent = "Editar";
+    modalEditarTitulo.textContent = "Editar Contenido";
     editTexto.classList.remove('hidden');
     editTexto.value = d.contenido;
   } else if (d.tipo === "cancion") {
-    modalEditarTitulo.textContent = "Editar";
+    modalEditarTitulo.textContent = "Editar Contenido";
     editCancionDiv.classList.remove('hidden');
     try {
       const parsed = JSON.parse(d.contenido);
