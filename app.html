@@ -6,6 +6,8 @@
   <title>Daily Love</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="manifest" href="manifest.json">
+  <!-- 🔥 FAVICON -->
+  <link rel="icon" href="Daily L.png" type="image/png">
   <meta name="theme-color" content="#EC4899">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,7 +17,8 @@
  
   <!-- ONESIGNAL -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
- <style>
+  
+  <style>
     @keyframes rebote {
       0%   { transform: scale(1); }
       30%  { transform: scale(1.08); }
@@ -80,7 +83,7 @@
 <div id="modalEditar"
   class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 opacity-0 transition-opacity duration-300 p-4">
   <div class="bg-white p-6 rounded-lg w-full max-w-md">
-    <h3 id="modalEditarTitulo" class="text-lg font-bold text-pink-600 mb-4">Editar Contenido</h3>
+    <h3 id="modalEditarTitulo" class="text-lg font-bold text-pink-600 mb-4">Editar</h3>
     <textarea id="editTexto" class="w-full border rounded p-3 mb-3 hidden" placeholder="Edita tu mensaje..."></textarea>
     <div id="editCancionDiv" class="hidden mb-3 flex flex-col gap-3">
       <textarea id="editDescCancion" class="w-full border rounded p-3 resize-none" rows="2" placeholder="Descripción 🎵"></textarea>
