@@ -6,9 +6,8 @@ const CACHE_NAME = "daily-love-v2";
 
 const urlsToCache = [
   "/DailyLove/",
-  "/DailyLove/index.html",
-  "/DailyLove/registro.html",
   "/DailyLove/app.html",
+  "/DailyLove/registro.html",
   "/DailyLove/js/app.js",
   "/DailyLove/js/firebase.js",
   "/DailyLove/js/registro.js",
