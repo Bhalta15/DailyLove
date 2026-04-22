@@ -7,9 +7,12 @@ import {
   setPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  doc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot
+  doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { mostrarToast } from "./toast.js";
+
+// ===== ONESIGNAL APP ID =====
+const ONESIGNAL_APP_ID = "1c802966-0ba1-4c4b-8b5b-7e0d8074f499";
 
 // ===== ESTADO GLOBAL =====
 let codigoPareja   = null;
@@ -17,43 +20,111 @@ let miUid          = null;
 let miGenero       = null;
 let unsubscribe    = null;
 let gruposAbiertos = {};
-let datosGlobal    = []; // copia de todos los datos para modo eliminar
+let datosGlobal    = [];
 
-// Modo eliminar por sección
-const modoEliminar   = { mensaje: false, foto: false, cancion: false, frase: false };
-const seleccionados  = { mensaje: new Set(), foto: new Set(), cancion: new Set(), frase: new Set() };
+const modoEliminar  = { mensaje: false, foto: false, cancion: false, frase: false };
+const seleccionados = { mensaje: new Set(), foto: new Set(), cancion: new Set(), frase: new Set() };
 
 // ===== ELEMENTOS =====
-const menuBtn          = document.getElementById('menuBtn');
-const sideMenu         = document.getElementById('sideMenu');
-const overlay          = document.getElementById('overlay');
-const btnCerrarSesion  = document.getElementById('btnCerrarSesion');
-const modal            = document.getElementById('modal');
-const inputTexto       = document.getElementById('inputTexto');
-const inputCancionDiv  = document.getElementById('inputCancionDiv');
-const inputDescCancion = document.getElementById('inputDescCancion');
-const inputLinkCancion = document.getElementById('inputLinkCancion');
-const inputFile        = document.getElementById('inputFile');
-const previewImagen    = document.getElementById('previewImagen');
-const cancelar         = document.getElementById('cancelar');
-const guardar          = document.getElementById('guardar');
-const modalFoto        = document.getElementById('modalFoto');
-const imagenGrande     = document.getElementById('imagenGrande');
-const btnDescargar     = document.getElementById('btnDescargar');
-const btnCerrarFoto    = document.getElementById('btnCerrarFoto');
-const modalEditar      = document.getElementById('modalEditar');
-const modalEditarTitulo= document.getElementById('modalEditarTitulo');
-const editTexto        = document.getElementById('editTexto');
-const editCancionDiv   = document.getElementById('editCancionDiv');
-const editDescCancion  = document.getElementById('editDescCancion');
-const editLinkCancion  = document.getElementById('editLinkCancion');
-const editFile         = document.getElementById('editFile');
-const editPreviewImagen= document.getElementById('editPreviewImagen');
-const cancelarEditar   = document.getElementById('cancelarEditar');
-const guardarEditar    = document.getElementById('guardarEditar');
-const modalEliminar    = document.getElementById('modalEliminar');
-const cancelarEliminar = document.getElementById('cancelarEliminar');
-const aceptarEliminar  = document.getElementById('aceptarEliminar');
+const menuBtn           = document.getElementById('menuBtn');
+const sideMenu          = document.getElementById('sideMenu');
+const overlay           = document.getElementById('overlay');
+const btnCerrarSesion   = document.getElementById('btnCerrarSesion');
+const modal             = document.getElementById('modal');
+const inputTexto        = document.getElementById('inputTexto');
+const inputCancionDiv   = document.getElementById('inputCancionDiv');
+const inputDescCancion  = document.getElementById('inputDescCancion');
+const inputLinkCancion  = document.getElementById('inputLinkCancion');
+const inputFile         = document.getElementById('inputFile');
+const previewImagen     = document.getElementById('previewImagen');
+const cancelar          = document.getElementById('cancelar');
+const guardar           = document.getElementById('guardar');
+const modalFoto         = document.getElementById('modalFoto');
+const imagenGrande      = document.getElementById('imagenGrande');
+const btnDescargar      = document.getElementById('btnDescargar');
+const btnCerrarFoto     = document.getElementById('btnCerrarFoto');
+const modalEditar       = document.getElementById('modalEditar');
+const modalEditarTitulo = document.getElementById('modalEditarTitulo');
+const editTexto         = document.getElementById('editTexto');
+const editCancionDiv    = document.getElementById('editCancionDiv');
+const editDescCancion   = document.getElementById('editDescCancion');
+const editLinkCancion   = document.getElementById('editLinkCancion');
+const editFile          = document.getElementById('editFile');
+const editPreviewImagen = document.getElementById('editPreviewImagen');
+const cancelarEditar    = document.getElementById('cancelarEditar');
+const guardarEditar     = document.getElementById('guardarEditar');
+const modalEliminar     = document.getElementById('modalEliminar');
+const cancelarEliminar  = document.getElementById('cancelarEliminar');
+const aceptarEliminar   = document.getElementById('aceptarEliminar');
+
+// ===== ONESIGNAL INIT =====
+async function iniciarOneSignal() {
+  try {
+    await OneSignal.init({
+      appId: ONESIGNAL_APP_ID,
+      serviceWorkerPath: "/DailyLove/sw.js",
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true
+    });
+
+    // Pedir permiso
+    const permission = await OneSignal.Notifications.requestPermission();
+    if (!permission) return;
+
+    // Obtener el Player ID (External ID) del usuario
+    const playerId = await OneSignal.User.PushSubscription.id;
+    if (playerId && miUid && codigoPareja) {
+      // Guardar el playerId en Firestore para que la pareja pueda mandarnos notis
+      await setDoc(doc(db, "usuarios", miUid), { oneSignalId: playerId }, { merge: true });
+    }
+  } catch (e) {
+    console.error("OneSignal error:", e);
+  }
+}
+
+// ===== MANDAR NOTIFICACIÓN A LA PAREJA =====
+async function notificarPareja(tipo) {
+  try {
+    // Buscar el oneSignalId de la pareja
+    const parejaSnap = await getDoc(doc(db, "parejas", codigoPareja));
+    if (!parejaSnap.exists()) return;
+
+    // Buscar uid de la pareja (el que no soy yo)
+    const miembros = parejaSnap.data()?.miembros || [];
+    const uidPareja = miembros.find(uid => uid !== miUid);
+    if (!uidPareja) return;
+
+    const parejaUserSnap = await getDoc(doc(db, "usuarios", uidPareja));
+    if (!parejaUserSnap.exists()) return;
+
+    const oneSignalId = parejaUserSnap.data()?.oneSignalId;
+    if (!oneSignalId) return;
+
+    // Texto según tipo
+    const mensajesNoti = {
+      mensaje: "Te enviaron un mensaje 💬",
+      foto:    "Te compartieron una foto 📸",
+      cancion: "Te dedicaron una canción 🎵",
+      frase:   "Te dejaron una frase 💭"
+    };
+
+    // Llamar a la API de OneSignal
+    await fetch("https://onesignal.com/api/v1/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        app_id:             ONESIGNAL_APP_ID,
+        include_player_ids: [oneSignalId],
+        headings:           { en: "Daily Love 💕" },
+        contents:           { en: mensajesNoti[tipo] || "Tu pareja te dejó algo ❤️" }
+      })
+    });
+  } catch (e) {
+    console.error("Error mandando notificación:", e);
+  }
+}
 
 // ===== SESIÓN PERSISTENTE =====
 setPersistence(auth, browserLocalPersistence).then(() => {
@@ -74,6 +145,17 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
       }
       iniciarTiempoReal();
+
+      // Iniciar OneSignal después de tener el uid y código
+      if (typeof OneSignal !== "undefined") {
+        await iniciarOneSignal();
+      } else {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async () => {
+          await iniciarOneSignal();
+        });
+      }
+
     } catch (error) {
       console.error("Error cargando usuario:", error);
     }
@@ -234,6 +316,8 @@ async function guardarEnFirebase(contenido) {
     });
     mostrarToast("¡Guardado!", "exito");
     cerrarModal();
+    // Notificar a la pareja
+    await notificarPareja(tipoActual);
   } catch (error) {
     mostrarToast("Tu pareja aún no se ha registrado, intenta más tarde", "info");
     console.error(error);
@@ -252,11 +336,11 @@ function abrirModalEditar(d) {
   editFile.value         = "";
 
   if (d.tipo === "mensaje" || d.tipo === "frase") {
-    modalEditarTitulo.textContent = "Editar Contenido";
+    modalEditarTitulo.textContent = "Editar";
     editTexto.classList.remove('hidden');
     editTexto.value = d.contenido;
   } else if (d.tipo === "cancion") {
-    modalEditarTitulo.textContent = "Editar Contenido";
+    modalEditarTitulo.textContent = "Editar";
     editCancionDiv.classList.remove('hidden');
     try {
       const parsed = JSON.parse(d.contenido);
@@ -337,17 +421,13 @@ function agregarDobleTap(el, d) {
   let lastTap = 0;
 
   const handler = (e) => {
-    // Ignorar si el tap fue en el botón ojito
     if (e.target.closest('.btn-ver-foto')) return;
-
     const now = Date.now();
     if (now - lastTap < 300) {
       lastTap = 0;
       if (d.autorUid === miUid) {
-        // Es mía: abrir editar
         abrirModalEditar(d);
       } else {
-        // Es de mi pareja: reaccionar
         toggleReaccion(d);
       }
     } else {
@@ -367,7 +447,6 @@ window.activarModoEliminar = (tipo) => {
   seleccionados[tipo].clear();
   tipoEliminarActual = tipo;
 
-  // Ocultar botones normales, mostrar palomita y tache
   document.getElementById(`btnNuevo${capitalizar(tipo)}`).classList.add('hidden');
   document.getElementById(`btnEliminar${capitalizar(tipo)}`).classList.add('hidden');
   document.getElementById(`btnConfirmar${capitalizar(tipo)}`).classList.remove('hidden');
@@ -500,21 +579,19 @@ function ojitaSVG() {
 
 // ===== CREAR CARD =====
 function crearCardHTML(d, enModoEliminar) {
-  const borde    = borderPorGenero(d.autorGenero);
-  const corazon  = heartSVG(d);
-  const esMio    = d.autorUid === miUid;
-  const selec    = seleccionados[d.tipo]?.has(d.id);
+  const borde   = borderPorGenero(d.autorGenero);
+  const corazon = heartSVG(d);
+  const esMio   = d.autorUid === miUid;
+  const selec   = seleccionados[d.tipo]?.has(d.id);
 
-  // Estilos modo eliminar
   let extraClases = "";
-  let overlay     = "";
+  let overlayEl   = "";
   if (enModoEliminar) {
     if (esMio) {
-      // Seleccionable: resaltado si está seleccionado
       extraClases = selec
         ? "ring-2 ring-red-400 opacity-100 cursor-pointer"
         : "opacity-100 cursor-pointer";
-      overlay = selec
+      overlayEl = selec
         ? `<span class="absolute inset-0 bg-red-100 bg-opacity-40 rounded-xl pointer-events-none flex items-center justify-center">
              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -522,7 +599,6 @@ function crearCardHTML(d, enModoEliminar) {
            </span>`
         : "";
     } else {
-      // De mi pareja: tenue, no seleccionable
       extraClases = "opacity-30 pointer-events-none";
     }
   }
@@ -533,7 +609,7 @@ function crearCardHTML(d, enModoEliminar) {
         class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none ${extraClases}">
         <p class="text-gray-700 text-lg break-all">"${d.contenido}"</p>
         ${corazon}
-        ${overlay}
+        ${overlayEl}
       </div>`;
   }
 
@@ -542,12 +618,11 @@ function crearCardHTML(d, enModoEliminar) {
       <div data-id="${d.id}"
         class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none ${extraClases}">
         <div class="w-full h-48 overflow-hidden rounded-lg">
-          <img src="${d.contenido}" alt="Foto"
-            class="w-full h-full object-cover">
+          <img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">
         </div>
         ${corazon}
         ${enModoEliminar ? "" : ojitaSVG()}
-        ${overlay}
+        ${overlayEl}
       </div>`;
   }
 
@@ -570,7 +645,7 @@ function crearCardHTML(d, enModoEliminar) {
           </a>
         </div>
         ${corazon}
-        ${overlay}
+        ${overlayEl}
       </div>`;
   }
 
@@ -623,21 +698,16 @@ function renderPorFecha(tipo, datos) {
 
   cont.innerHTML = html;
 
-  // Asignar eventos
   datos.forEach(d => {
     const cardEl = cont.querySelector(`[data-id="${d.id}"]`);
     if (!cardEl) return;
 
     if (enModoEliminar) {
-      // Solo cards mías son clickeables para seleccionar
       if (d.autorUid === miUid) {
         cardEl.addEventListener("click", () => toggleSeleccion(d.tipo, d.id, cardEl, d));
       }
     } else {
-      // Doble tap normal
       agregarDobleTap(cardEl, d);
-
-      // Ojito para fotos
       if (d.tipo === "foto") {
         const ojito = cardEl.querySelector(".btn-ver-foto");
         if (ojito) ojito.addEventListener("click", (e) => {
@@ -649,20 +719,17 @@ function renderPorFecha(tipo, datos) {
   });
 }
 
-// ===== TOGGLE SELECCIÓN MODO ELIMINAR =====
+// ===== TOGGLE SELECCIÓN =====
 function toggleSeleccion(tipo, id, cardEl, d) {
   if (seleccionados[tipo].has(id)) {
     seleccionados[tipo].delete(id);
   } else {
     seleccionados[tipo].add(id);
   }
-  // Re-renderizar solo la card cambiada para actualizar el checkmark
   const nuevoHTML = crearCardHTML(d, true);
   const temp = document.createElement('div');
   temp.innerHTML = nuevoHTML;
   const nuevaCard = temp.firstElementChild;
-
-  // Re-asignar evento click
   nuevaCard.addEventListener("click", () => toggleSeleccion(tipo, id, nuevaCard, d));
   cardEl.replaceWith(nuevaCard);
 }
@@ -704,8 +771,7 @@ function renderInicio(datos) {
   document.querySelectorAll(".listaFotos").forEach(el => {
     el.innerHTML = fotos.map((f, i) => `
       <div class="w-full h-32 overflow-hidden rounded-lg cursor-pointer" data-foto-idx="${i}">
-        <img src="${f.contenido}" alt="Foto"
-          class="w-full h-full object-cover hover:opacity-90 transition">
+        <img src="${f.contenido}" alt="Foto" class="w-full h-full object-cover hover:opacity-90 transition">
       </div>`
     ).join("");
     el.querySelectorAll("[data-foto-idx]").forEach((div, i) => {
