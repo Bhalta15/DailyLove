@@ -62,38 +62,23 @@ async function iniciarOneSignal() {
   try {
     await OneSignal.init({
       appId: ONESIGNAL_APP_ID,
-
-      // 🔥 rutas correctas para GitHub Pages
-      serviceWorkerPath: "/OneSignalSDKWorker.js",
-      serviceWorkerUpdaterPath: "/OneSignalSDKUpdaterWorker.js",
-
+      serviceWorkerPath: "/DailyLove/sw.js",
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true
     });
 
-    console.log("✅ OneSignal inicializado");
-
+    // Pedir permiso
     const permission = await OneSignal.Notifications.requestPermission();
-    console.log("Permiso:", permission);
-
     if (!permission) return;
 
-    OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
-      const playerId = event.current.id;
-
-      console.log("🔥 Player ID:", playerId);
-
-      if (playerId && miUid) {
-        await setDoc(doc(db, "usuarios", miUid), {
-          oneSignalId: playerId
-        }, { merge: true });
-
-        console.log("✅ oneSignalId guardado");
-      }
-    });
-
+    // Obtener el Player ID (External ID) del usuario
+    const playerId = await OneSignal.User.PushSubscription.id;
+    if (playerId && miUid && codigoPareja) {
+      // Guardar el playerId en Firestore para que la pareja pueda mandarnos notis
+      await setDoc(doc(db, "usuarios", miUid), { oneSignalId: playerId }, { merge: true });
+    }
   } catch (e) {
-    console.error("❌ OneSignal error:", e);
+    console.error("OneSignal error:", e);
   }
 }
 
@@ -105,8 +90,8 @@ async function notificarPareja(tipo) {
     if (!parejaSnap.exists()) return;
 
     // Buscar uid de la pareja (el que no soy yo)
-    const usuarios = parejaSnap.data()?.usuarios || [];
-    const uidPareja = usuarios.find(uid => uid !== miUid);
+    const miembros = parejaSnap.data()?.miembros || [];
+    const uidPareja = miembros.find(uid => uid !== miUid);
     if (!uidPareja) return;
 
     const parejaUserSnap = await getDoc(doc(db, "usuarios", uidPareja));
@@ -144,46 +129,37 @@ async function notificarPareja(tipo) {
 // ===== SESIÓN PERSISTENTE =====
 setPersistence(auth, browserLocalPersistence).then(() => {
   onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "registro.html";
-    return;
-  }
-
-  try {
-    const snap = await getDoc(doc(db, "usuarios", user.uid));
-
-    if (snap.exists()) {
-      const datos  = snap.data();
-
-      miUid        = user.uid;
-      miGenero     = datos.genero;
-      codigoPareja = datos.codigo;
-
-      document.getElementById("userName").textContent     = datos.usuario;
-      document.getElementById("userNameMain").textContent = datos.usuario;
-
-      mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
-
-      console.log("👤 UID:", miUid);
-      console.log("💑 Código pareja:", codigoPareja);
+    if (!user) {
+      window.location.href = "registro.html";
+      return;
     }
+    try {
+      const snap = await getDoc(doc(db, "usuarios", user.uid));
+      if (snap.exists()) {
+        const datos  = snap.data();
+        miUid        = user.uid;
+        miGenero     = datos.genero;
+        codigoPareja = datos.codigo;
+        document.getElementById("userName").textContent     = datos.usuario;
+        document.getElementById("userNameMain").textContent = datos.usuario;
+        mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
+      }
+      iniciarTiempoReal();
 
-    iniciarTiempoReal();
-
-    // 🔥 ASEGURAR que OneSignal corre DESPUÉS de tener UID
-    if (typeof OneSignal !== "undefined") {
-      await iniciarOneSignal();
-    } else {
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      window.OneSignalDeferred.push(async () => {
+      // Iniciar OneSignal después de tener el uid y código
+      if (typeof OneSignal !== "undefined") {
         await iniciarOneSignal();
-      });
-    }
+      } else {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async () => {
+          await iniciarOneSignal();
+        });
+      }
 
-  } catch (error) {
-    console.error("Error cargando usuario:", error);
-  }
-});
+    } catch (error) {
+      console.error("Error cargando usuario:", error);
+    }
+  });
 });
 
 // ===== CERRAR SESIÓN =====
