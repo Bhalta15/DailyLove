@@ -62,7 +62,11 @@ async function iniciarOneSignal() {
   try {
     await OneSignal.init({
       appId: ONESIGNAL_APP_ID,
-      serviceWorkerPath: "/sw.js",
+
+      // 🔥 IMPORTANTE: rutas correctas para GitHub Pages
+      serviceWorkerPath: "/DailyLove/OneSignalSDKWorker.js",
+      serviceWorkerUpdaterPath: "/DailyLove/OneSignalSDKUpdaterWorker.js",
+
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true
     });
@@ -71,24 +75,26 @@ async function iniciarOneSignal() {
 
     // Pedir permiso
     const permission = await OneSignal.Notifications.requestPermission();
-    console.log("Permiso notificaciones:", permission);
+    console.log("Permiso:", permission);
 
     if (!permission) return;
 
-    // Obtener Player ID
-    const playerId = OneSignal.User.PushSubscription.id;
-    console.log("Player ID:", playerId);
+    // 🔥 ESPERAR a que OneSignal tenga el ID listo
+    OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
+      const playerId = event.current.id;
 
-    // 🔥 GUARDAR SIEMPRE QUE HAYA UID
-    if (playerId && miUid) {
-      await setDoc(
-        doc(db, "usuarios", miUid),
-        { oneSignalId: playerId },
-        { merge: true }
-      );
+      console.log("🔥 Player ID detectado:", playerId);
 
-      console.log("🔥 oneSignalId guardado en Firestore");
-    }
+      if (playerId && miUid) {
+        await setDoc(
+          doc(db, "usuarios", miUid),
+          { oneSignalId: playerId },
+          { merge: true }
+        );
+
+        console.log("✅ oneSignalId guardado en Firestore");
+      }
+    });
 
   } catch (e) {
     console.error("❌ OneSignal error:", e);
