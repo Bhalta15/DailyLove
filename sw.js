@@ -1,3 +1,7 @@
+// ===== ONESIGNAL (debe ir primero) =====
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+
+// ===== CACHE PWA =====
 const CACHE_NAME = "daily-love-v2";
 
 const urlsToCache = [
