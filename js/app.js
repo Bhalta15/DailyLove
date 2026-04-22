@@ -64,11 +64,8 @@ async function iniciarOneSignal() {
       appId: ONESIGNAL_APP_ID,
 
       // 🔥 rutas correctas para GitHub Pages
-      serviceWorkerPath: "/DailyLove/OneSignalSDKWorker.js",
-      serviceWorkerUpdaterPath: "/DailyLove/OneSignalSDKUpdaterWorker.js",
-
-      // 🔥 ESTO ES LO MÁS IMPORTANTE
-      serviceWorkerParam: { scope: "/DailyLove/" },
+      serviceWorkerPath: "/OneSignalSDKWorker.js",
+      serviceWorkerUpdaterPath: "/OneSignalSDKUpdaterWorker.js",
 
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true
