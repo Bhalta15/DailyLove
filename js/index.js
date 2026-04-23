@@ -6,7 +6,7 @@ if ("serviceWorker" in navigator) {
 }
 
 // ===== REDIRECCIÓN AUTOMÁTICA SI YA HAY SESIÓN =====
-import { auth } from "./js/firebase.js";
+import { auth } from "./firebase.js";
 import {
   onAuthStateChanged,
   browserLocalPersistence,
