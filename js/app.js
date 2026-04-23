@@ -260,7 +260,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
                 fotoPerfilHeader.src = nuevaFoto;
               }
 
-              mostrarToast("Perfil actualizado 💖", "exito");
+              mostrarToast("Perfil actualizado", "perfil");
               modalEditarPerfil.classList.add("hidden");
 
             } catch (error) {
