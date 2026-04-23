@@ -110,7 +110,7 @@ async function notificarPareja(tipo) {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Authorization": "Basic os_v2_app_dsacszqlufgexc23pygya5hutggjzkyozeuumyvwqh5oadm7a4ffs4hqc5xtne7xvvdbelvlptyn5zff7dlywm47atvmoyixgz22r5y"
+    "Authorization": "Key os_v2_app_dsacszqlufgexc23pygya5hutggjzkyozeuumyvwqh5oadm7a4ffs4hqc5xtne7xvvdbelvlptyn5zff7dlywm47atvmoyixgz22r5y"
   },
   body: JSON.stringify({
     app_id:             ONESIGNAL_APP_ID,
