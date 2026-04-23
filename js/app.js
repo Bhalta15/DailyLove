@@ -89,7 +89,6 @@ async function notificarPareja(tipo) {
     const parejaSnap = await getDoc(doc(db, "parejas", codigoPareja));
     if (!parejaSnap.exists()) return;
 
-    // El array se llama "usuarios" no "miembros"
     const miembros = parejaSnap.data()?.usuarios || [];
     const uidPareja = miembros.find(uid => uid !== miUid);
     if (!uidPareja) return;
@@ -109,7 +108,10 @@ async function notificarPareja(tipo) {
 
     await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Basic os_v2_app_dsacszqlufgexc23pygya5hutggjzkyozeuumyvwqh5oadm7a4ffs4hqc5xtne7xvvdbelvlptyn5zff7dlywm47atvmoyixgz22r5y"
+      },
       body: JSON.stringify({
         app_id:             ONESIGNAL_APP_ID,
         include_player_ids: [oneSignalId],
