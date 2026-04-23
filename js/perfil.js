@@ -61,20 +61,19 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ===== ANIMACIÓN SIMPLE =====
+// ===== ANIMACIÓN =====
 function mostrarElemento(el) {
   el.classList.remove("hidden");
-  setTimeout(() => el.classList.remove("opacity-0"), 10);
 }
 
 function ocultarElemento(el) {
-  el.classList.add("opacity-0");
-  setTimeout(() => el.classList.add("hidden"), 300);
+  el.classList.add("hidden");
 }
 
 // ===== SALIR EDICIÓN =====
 function salirModoEdicion() {
   nombrePerfil.classList.remove("hidden");
+
   ocultarElemento(inputNombrePerfil);
   ocultarElemento(inputPasswordPerfil);
   ocultarElemento(inputPasswordActual);
@@ -110,7 +109,6 @@ btnEditarPerfil.onclick = () => {
   btnCambiarFoto.classList.remove("hidden");
   btnEliminarFoto.classList.remove("hidden");
 
-  // pequeña animación a la foto
   fotoPerfil.classList.add("scale-110");
   setTimeout(() => fotoPerfil.classList.remove("scale-110"), 200);
 };
@@ -152,22 +150,10 @@ btnGuardarPerfil.onclick = async () => {
     return;
   }
 
+  const user = auth.currentUser;
+
   try {
-    const user = auth.currentUser;
-    let fotoFinal = null;
-
-    if (nuevaFoto) {
-      fotoFinal = await comprimirImagen(nuevaFoto);
-    }
-
-    const updateData = { usuario: nuevoNombre };
-
-    if (fotoFinal) updateData.foto = fotoFinal;
-    if (eliminarFoto) updateData.foto = null;
-
-    await updateDoc(doc(db, "usuarios", user.uid), updateData);
-
-    // ===== PASSWORD SEGURA =====
+    // ===== VALIDAR PASSWORD PRIMERO =====
     if (nuevaPassword) {
       if (!passwordActual) {
         mostrarToast("Ingresa tu contraseña actual", "error");
@@ -182,6 +168,20 @@ btnGuardarPerfil.onclick = async () => {
       await reauthenticateWithCredential(user, credential);
       await updatePassword(user, nuevaPassword);
     }
+
+    // ===== FOTO =====
+    let fotoFinal = null;
+
+    if (nuevaFoto) {
+      fotoFinal = await comprimirImagen(nuevaFoto);
+    }
+
+    const updateData = { usuario: nuevoNombre };
+
+    if (fotoFinal) updateData.foto = fotoFinal;
+    if (eliminarFoto) updateData.foto = null;
+
+    await updateDoc(doc(db, "usuarios", user.uid), updateData);
 
     // ===== UI =====
     nombrePerfil.textContent = nuevoNombre;
