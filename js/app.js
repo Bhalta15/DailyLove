@@ -106,23 +106,19 @@ async function notificarPareja(tipo) {
       frase:   "Te dejaron una frase 💭"
     };
 
-    await fetch("https://corsproxy.io/?https://api.onesignal.com/notifications", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": "Key os_v2_app_dsacszqlufgexc23pygya5hutej6m3hi6oje7m4gg4wwl7yfukeko6cxnvfchbszhuldpidtukwh4xl74xyk6xnp4tho2by5hhzmb4a"
-  },
-  body: JSON.stringify({
-    app_id:             ONESIGNAL_APP_ID,
-    include_subscription_ids: [oneSignalId],
-    headings:           { en: "Daily Love 💕" },
-    contents:           { en: mensajesNoti[tipo] || "Tu pareja te dejó algo ❤️" }
-  })
-});
+    await fetch("https://daily-love-server.onrender.com/notificar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        oneSignalId,
+        tipo
+      })
+    });
   } catch (e) {
     console.error("Error mandando notificación:", e);
   }
 }
+
 
 // ===== SESIÓN PERSISTENTE =====
 setPersistence(auth, browserLocalPersistence).then(() => {
