@@ -106,15 +106,15 @@ async function notificarPareja(tipo) {
       frase:   "Te dejaron una frase 💭"
     };
 
-    await fetch("https://corsproxy.io/?https://onesignal.com/api/v1/notifications", {
+    await fetch("https://corsproxy.io/?https://api.onesignal.com/notifications", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Authorization": "Key os_v2_app_dsacszqlufgexc23pygya5hutggjzkyozeuumyvwqh5oadm7a4ffs4hqc5xtne7xvvdbelvlptyn5zff7dlywm47atvmoyixgz22r5y"
+    "Authorization": "Key os_v2_app_dsacszqlufgexc23pygya5hutej6m3hi6oje7m4gg4wwl7yfukeko6cxnvfchbszhuldpidtukwh4xl74xyk6xnp4tho2by5hhzmb4a"
   },
   body: JSON.stringify({
     app_id:             ONESIGNAL_APP_ID,
-    include_player_ids: [oneSignalId],
+    include_subscription_ids: [oneSignalId],
     headings:           { en: "Daily Love 💕" },
     contents:           { en: mensajesNoti[tipo] || "Tu pareja te dejó algo ❤️" }
   })
