@@ -310,8 +310,9 @@ async function guardarEnFirebase(contenido) {
     });
     mostrarToast("¡Guardado!", "exito");
     cerrarModal();
-    // Notificar a la pareja
+    console.log("Llamando notificarPareja con tipo:", tipoActual);
     await notificarPareja(tipoActual);
+    console.log("notificarPareja terminó");
   } catch (error) {
     mostrarToast("Tu pareja aún no se ha registrado, intenta más tarde", "info");
     console.error(error);
