@@ -16,6 +16,11 @@ function mostrarToast(mensaje, tipo = "exito") {
       texto: "text-pink-800",
       icono: "💖"
     },
+    perfil: {
+      bg:    "bg-green-100 border border-green-500",
+      texto: "text-green-800",
+      icono: "💖💖"
+    },
   };
 
   const e = estilos[tipo];
