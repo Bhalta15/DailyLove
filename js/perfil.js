@@ -18,19 +18,17 @@ import { mostrarToast } from "./toast.js";
 // ===== ELEMENTOS =====
 const nombrePerfil = document.getElementById("nombrePerfil");
 const correoPerfil = document.getElementById("correoPerfil");
-const fotoPerfil   = document.getElementById("fotoPerfil");
-
+const fotoPerfil = document.getElementById("fotoPerfil");
 const inputNombrePerfil = document.getElementById("inputNombrePerfil");
-const inputFotoPerfil   = document.getElementById("inputFotoPerfil");
+const inputFotoPerfil = document.getElementById("inputFotoPerfil");
 const inputPasswordPerfil = document.getElementById("inputPasswordPerfil");
 const inputPasswordActual = document.getElementById("inputPasswordActual");
 
-const btnEditarPerfil   = document.getElementById("btnEditarPerfil");
-const btnGuardarPerfil  = document.getElementById("btnGuardarPerfil");
+const btnEditarPerfil = document.getElementById("btnEditarPerfil");
+const btnGuardarPerfil = document.getElementById("btnGuardarPerfil");
 const btnCancelarPerfil = document.getElementById("btnCancelarPerfil");
-const btnCambiarFoto    = document.getElementById("btnCambiarFoto");
-const btnEliminarFoto   = document.getElementById("btnEliminarFoto");
-
+const btnCambiarFoto = document.getElementById("btnCambiarFoto");
+const btnEliminarFoto = document.getElementById("btnEliminarFoto");
 const btnCerrarSesionPerfil = document.getElementById("btnCerrarSesionPerfil");
 
 // ===== ESTADO =====
@@ -53,21 +51,20 @@ onAuthStateChanged(auth, async (user) => {
     nombrePerfil.textContent = datos.usuario;
     correoPerfil.textContent = user.email;
 
-    fotoOriginal = datos.foto
-      ? datos.foto
-      : generarAvatar(datos.usuario);
-
+    fotoOriginal = datos.foto ? datos.foto : generarAvatar(datos.usuario);
     fotoPerfil.src = fotoOriginal;
   }
 });
 
-// ===== ANIMACIÓN =====
+// ===== ANIMACIÓN SIMPLE =====
 function mostrarElemento(el) {
   el.classList.remove("hidden");
+  setTimeout(() => el.classList.remove("opacity-0"), 10);
 }
 
 function ocultarElemento(el) {
-  el.classList.add("hidden");
+  el.classList.add("opacity-0");
+  setTimeout(() => el.classList.add("hidden"), 300);
 }
 
 // ===== SALIR EDICIÓN =====
@@ -81,6 +78,7 @@ function salirModoEdicion() {
   btnEditarPerfil.classList.remove("hidden");
   btnGuardarPerfil.classList.add("hidden");
   btnCancelarPerfil.classList.add("hidden");
+
   btnCambiarFoto.classList.add("hidden");
   btnEliminarFoto.classList.add("hidden");
 
@@ -106,9 +104,11 @@ btnEditarPerfil.onclick = () => {
   btnEditarPerfil.classList.add("hidden");
   btnGuardarPerfil.classList.remove("hidden");
   btnCancelarPerfil.classList.remove("hidden");
+
   btnCambiarFoto.classList.remove("hidden");
   btnEliminarFoto.classList.remove("hidden");
 
+  // pequeña animación a la foto
   fotoPerfil.classList.add("scale-110");
   setTimeout(() => fotoPerfil.classList.remove("scale-110"), 200);
 };
@@ -150,10 +150,25 @@ btnGuardarPerfil.onclick = async () => {
     return;
   }
 
-  const user = auth.currentUser;
-
   try {
-    // ===== VALIDAR PASSWORD PRIMERO =====
+    const user = auth.currentUser;
+
+    let fotoFinal = null;
+
+    if (nuevaFoto) {
+      fotoFinal = await comprimirImagen(nuevaFoto);
+    }
+
+    const updateData = {
+      usuario: nuevoNombre
+    };
+
+    if (fotoFinal) updateData.foto = fotoFinal;
+    if (eliminarFoto) updateData.foto = null;
+
+    await updateDoc(doc(db, "usuarios", user.uid), updateData);
+
+    // ===== PASSWORD SEGURA =====
     if (nuevaPassword) {
       if (!passwordActual) {
         mostrarToast("Ingresa tu contraseña actual", "error");
@@ -168,20 +183,6 @@ btnGuardarPerfil.onclick = async () => {
       await reauthenticateWithCredential(user, credential);
       await updatePassword(user, nuevaPassword);
     }
-
-    // ===== FOTO =====
-    let fotoFinal = null;
-
-    if (nuevaFoto) {
-      fotoFinal = await comprimirImagen(nuevaFoto);
-    }
-
-    const updateData = { usuario: nuevoNombre };
-
-    if (fotoFinal) updateData.foto = fotoFinal;
-    if (eliminarFoto) updateData.foto = null;
-
-    await updateDoc(doc(db, "usuarios", user.uid), updateData);
 
     // ===== UI =====
     nombrePerfil.textContent = nuevoNombre;
@@ -226,8 +227,8 @@ function comprimirImagen(file) {
 
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const max = 800;
 
+        const max = 800;
         let w = img.width;
         let h = img.height;
 
