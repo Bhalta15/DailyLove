@@ -1,3 +1,4 @@
+// ===== FIREBASE =====
 import { db, auth } from "./firebase.js";
 import {
   onAuthStateChanged,
@@ -87,7 +88,7 @@ async function iniciarOneSignal() {
 }
 
 // ===== MANDAR NOTIFICACIÓN A LA PAREJA =====
-async function notificarPareja(tipo) {
+async function notificarPareja(tipo, contenidoRaw = "") {
   try {
     const parejaSnap = await getDoc(doc(db, "parejas", codigoPareja));
     if (!parejaSnap.exists()) return;
@@ -102,13 +103,20 @@ async function notificarPareja(tipo) {
     const oneSignalId = parejaUserSnap.data()?.oneSignalId;
     if (!oneSignalId) return;
 
-    // Cargar el apodo que la pareja me puso a mí
-    const miSnap = await getDoc(doc(db, "usuarios", uidPareja));
-    const apodoQueEllaUsaParaMi = miSnap.exists() ? (miSnap.data().apodoPareja || "") : "";
-
-    // El nombre que verá la pareja en la noti
-    const miNombre = document.getElementById("userName").textContent;
-    const nombreEnNoti = apodoQueEllaUsaParaMi || miNombre;
+    // Extraer preview de texto segun tipo
+    let preview = "";
+    if (tipo === "mensaje" || tipo === "frase") {
+      preview = contenidoRaw.length > 50
+        ? contenidoRaw.substring(0, 50) + "..."
+        : contenidoRaw;
+    } else if (tipo === "cancion") {
+      try {
+        const parsed = JSON.parse(contenidoRaw);
+        const desc = parsed.desc || "";
+        preview = desc.length > 50 ? desc.substring(0, 50) + "..." : desc;
+      } catch { preview = ""; }
+    }
+    // foto: preview vacio, server usa solo mensaje base
 
     await fetch("https://daily-love-server.onrender.com/notificar", {
       method: "POST",
@@ -116,7 +124,8 @@ async function notificarPareja(tipo) {
       body: JSON.stringify({
         oneSignalId,
         tipo,
-        nombreUsuario: nombreEnNoti  // ← ahora manda apodo si existe
+        nombreUsuario: document.getElementById("userName").textContent,
+        preview
       })
     });
   } catch (e) {
@@ -126,10 +135,10 @@ async function notificarPareja(tipo) {
 
 // ===== TOAST IN-APP PARA CONTENIDO NUEVO DE LA PAREJA =====
 const mensajesInApp = {
-  mensaje: "Nuevo mensaje💬",
-  foto:    "Nueva foto📸",
-  cancion: "Nueva canción🎵",
-  frase:   "Nueva frase💭"
+  mensaje: "💬 Nuevo mensaje",
+  foto:    "📸 Nueva foto",
+  cancion: "🎵 Nueva canción",
+  frase:   "💭 Nueva frase"
 };
 
 // Apodo guardado de la pareja (se carga al iniciar sesión)
@@ -172,13 +181,9 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         miGenero     = datos.genero;
         codigoPareja = datos.codigo;
 
-        if (!codigoPareja) {
-          window.location.href = "registro.html";
-          return;
-        }
-
         const userNameEl     = document.getElementById("userName");
         const userNameMainEl = document.getElementById("userNameMain");
+
         if (userNameEl)     userNameEl.textContent     = datos.usuario;
         if (userNameMainEl) userNameMainEl.textContent = datos.usuario;
 
@@ -197,19 +202,16 @@ setPersistence(auth, browserLocalPersistence).then(() => {
           mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
           sessionStorage.setItem("bienvenidaMostrada", "1");
         }
+      }
 
-        await cargarApodoPareja();
-        iniciarTiempoReal();
+      await cargarApodoPareja();
+      iniciarTiempoReal();
 
-        if (typeof OneSignal !== "undefined") {
-          await iniciarOneSignal();
-        } else {
-          window.OneSignalDeferred = window.OneSignalDeferred || [];
-          window.OneSignalDeferred.push(async () => { await iniciarOneSignal(); });
-        }
-
+      if (typeof OneSignal !== "undefined") {
+        await iniciarOneSignal();
       } else {
-        window.location.href = "registro.html";
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async () => { await iniciarOneSignal(); });
       }
 
     } catch (error) {
@@ -376,9 +378,7 @@ async function guardarEnFirebase(contenido) {
     });
     mostrarToast("¡Guardado!", "exito");
     cerrarModal();
-    console.log("Llamando notificarPareja con tipo:", tipoActual);
-    await notificarPareja(tipoActual);
-    console.log("notificarPareja terminó");
+    await notificarPareja(tipoActual, contenido);
   } catch (error) {
     mostrarToast("Tu pareja aún no se ha registrado, intenta más tarde", "info");
     console.error(error);
@@ -577,7 +577,7 @@ function iniciarTiempoReal() {
 
   const ref = collection(db, "parejas", codigoPareja, "contenido");
 
-  unsubscribe = onSnapshot(ref, async (snapshot) => {
+  unsubscribe = onSnapshot(ref, (snapshot) => {
     const datos = [];
     snapshot.forEach(d => datos.push({ id: d.id, ...d.data() }));
     datos.sort((a, b) => {
