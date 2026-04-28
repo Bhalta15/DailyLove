@@ -31,14 +31,25 @@
     </div>
   </div>
 
+  <!-- MODAL VER FOTO GRANDE PAREJA (nuevo) -->
+  <div id="modalVerFotoPareja"
+    class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-[60] p-4">
+    <div class="relative max-w-sm w-full">
+      <button id="btnCerrarVerFotoPareja" class="absolute top-2 right-2 text-white text-xl hover:text-gray-300 transition">✕</button>
+      <img id="fotoGrandePareja" src="" class="w-full rounded-2xl object-cover shadow-xl">
+    </div>
+  </div>
+
   <!-- MODAL PERFIL PAREJA -->
   <div id="modalPerfilPareja"
     class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center relative">
       <button id="btnCerrarPerfilPareja"
         class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl transition">✕</button>
+      <!-- Foto clickeable para ver grande -->
       <img id="fotoParejaPerfil"
-        class="w-24 h-24 rounded-full object-cover border-4 border-pink-300 mx-auto mb-3 shadow">
+        class="w-24 h-24 rounded-full object-cover border-4 border-pink-300 mx-auto mb-3 shadow cursor-pointer hover:opacity-90 transition"
+        title="Tap para ver foto completa">
       <h3 id="nombreParejaModal" class="text-lg font-bold text-pink-600 mb-1"></h3>
       <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Género</p>
       <p id="generoParejaModal" class="text-gray-700 font-medium mb-3 capitalize"></p>
@@ -76,11 +87,27 @@
     </div>
   </div>
 
+  <!-- MODAL CONFIRMAR CANCELAR (nuevo) -->
+  <div id="modalConfirmarCancelar"
+    class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-xl">
+      <p class="text-gray-700 text-base mb-1">¿Estás seguro de cancelar los cambios?</p>
+      <p class="text-gray-400 text-xs mb-6">Se descartarán también los cambios de contraseña y apodo.</p>
+      <div class="flex gap-3 justify-center">
+        <button id="btnSeguirEditando"
+          class="px-5 py-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 transition text-sm">Seguir editando</button>
+        <button id="btnAceptarCancelar"
+          class="px-5 py-2 rounded-lg border border-red-300 text-red-400 hover:bg-red-50 transition text-sm">Sí, cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL EDITAR CONTRASEÑA -->
   <div id="modalPassword"
     class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-      <h3 class="text-base font-bold text-pink-600 mb-4">Cambiar contraseña</h3>
+      <h3 class="text-base font-bold text-pink-600 mb-1">Cambiar contraseña</h3>
+      <p class="text-xs text-gray-400 mb-4">Se aplicará al guardar el perfil.</p>
       <div class="mb-3">
         <input id="inputPasswordActual" type="password"
           class="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
@@ -97,7 +124,7 @@
         <button id="btnCancelarPassword"
           class="px-5 py-2 rounded-lg border border-red-300 text-red-400 hover:bg-red-50 transition text-sm">Cancelar</button>
         <button id="btnGuardarPassword"
-          class="px-5 py-2 rounded-lg border border-green-300 text-green-500 hover:bg-green-50 transition text-sm">Guardar</button>
+          class="px-5 py-2 rounded-lg border border-green-300 text-green-500 hover:bg-green-50 transition text-sm">Listo</button>
       </div>
     </div>
   </div>
@@ -106,7 +133,8 @@
   <div id="modalApodo"
     class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-      <h3 class="text-base font-bold text-pink-600 mb-4">Apodo de tu pareja</h3>
+      <h3 class="text-base font-bold text-pink-600 mb-1">Apodo de tu pareja</h3>
+      <p class="text-xs text-gray-400 mb-4">Se aplicará al guardar el perfil.</p>
       <input id="inputApodo"
         class="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 mb-5"
         placeholder="Ej: mi amor, cariño...">
@@ -114,7 +142,7 @@
         <button id="btnCancelarApodo"
           class="px-5 py-2 rounded-lg border border-red-300 text-red-400 hover:bg-red-50 transition text-sm">Cancelar</button>
         <button id="btnGuardarApodo"
-          class="px-5 py-2 rounded-lg border border-green-300 text-green-500 hover:bg-green-50 transition text-sm">Guardar</button>
+          class="px-5 py-2 rounded-lg border border-green-300 text-green-500 hover:bg-green-50 transition text-sm">Listo</button>
       </div>
     </div>
   </div>
@@ -176,11 +204,13 @@
           <p id="generoPerfil" class="text-gray-700 font-medium capitalize"></p>
         </div>
 
-        <!-- PAREJA con ojito -->
+        <!-- PAREJA con ojito y apodo en línea -->
         <div>
           <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Pareja</p>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <p id="parejaPerfil" class="text-gray-700 font-medium"></p>
+            <!-- Apodo en línea: "Baltazar (mi amor)" -->
+            <span id="apodoPareja" class="text-pink-400 text-sm italic hidden"></span>
             <button id="btnVerPareja"
               class="text-purple-400 hover:text-purple-600 transition"
               title="Ver perfil de tu pareja">
@@ -190,8 +220,6 @@
               </svg>
             </button>
           </div>
-          <!-- Apodo -->
-          <p id="apodoPareja" class="text-pink-400 text-xs mt-0.5 italic hidden"></p>
           <button id="btnAbrirApodo" class="hidden mt-1 text-xs text-pink-500 hover:text-pink-600 underline transition">
             Establecer apodo
           </button>
