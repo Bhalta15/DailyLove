@@ -164,16 +164,14 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         miUid        = user.uid;
         miGenero     = datos.genero;
         codigoPareja = datos.codigo;
-        // ← AGREGAR ESTO
-  if (!codigoPareja) {
-    console.warn("Usuario sin código de pareja, redirigiendo...");
-    window.location.href = "registro.html"; // o donde completen el registro
-    return;
-  }
+
+        if (!codigoPareja) {
+          window.location.href = "registro.html";
+          return;
+        }
 
         const userNameEl     = document.getElementById("userName");
         const userNameMainEl = document.getElementById("userNameMain");
-
         if (userNameEl)     userNameEl.textContent     = datos.usuario;
         if (userNameMainEl) userNameMainEl.textContent = datos.usuario;
 
@@ -192,16 +190,19 @@ setPersistence(auth, browserLocalPersistence).then(() => {
           mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
           sessionStorage.setItem("bienvenidaMostrada", "1");
         }
-      }
 
-      await cargarApodoPareja();
-      iniciarTiempoReal();
+        await cargarApodoPareja();
+        iniciarTiempoReal();
 
-      if (typeof OneSignal !== "undefined") {
-        await iniciarOneSignal();
+        if (typeof OneSignal !== "undefined") {
+          await iniciarOneSignal();
+        } else {
+          window.OneSignalDeferred = window.OneSignalDeferred || [];
+          window.OneSignalDeferred.push(async () => { await iniciarOneSignal(); });
+        }
+
       } else {
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async () => { await iniciarOneSignal(); });
+        window.location.href = "registro.html";
       }
 
     } catch (error) {
