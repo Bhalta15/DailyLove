@@ -114,7 +114,7 @@ async function notificarPareja(tipo, contenidoRaw = "") {
         const parsed = JSON.parse(contenidoRaw);
         const desc = parsed.desc || "";
         preview = desc.length > 50 ? desc.substring(0, 50) + "..." : desc;
-      } catch { preview = ""; }
+      } catch (_e) { preview = ""; }
     }
     // foto: preview vacio, server usa solo mensaje base
 
