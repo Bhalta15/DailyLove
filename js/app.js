@@ -159,11 +159,12 @@ setPersistence(auth, browserLocalPersistence).then(() => {
     try {
       const snap = await getDoc(doc(db, "usuarios", user.uid));
 
-      if (snap.exists()) {
-        const datos  = snap.data();
-        miUid        = user.uid;
-        miGenero     = datos.genero;
-        codigoPareja = datos.codigo;
+      miUid = user.uid; // 🔥 SIEMPRE asignar
+
+if (snap.exists()) {
+  const datos  = snap.data();
+  miGenero     = datos.genero;
+  codigoPareja = datos.codigo;
 
         const userNameEl     = document.getElementById("userName");
         const userNameMainEl = document.getElementById("userNameMain");
