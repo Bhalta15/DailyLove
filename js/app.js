@@ -570,7 +570,7 @@ function iniciarTiempoReal() {
 
   const ref = collection(db, "parejas", codigoPareja, "contenido");
 
-  unsubscribe = onSnapshot(ref, (snapshot) => {
+  unsubscribe = onSnapshot(ref, async (snapshot) => { 
     const datos = [];
     snapshot.forEach(d => datos.push({ id: d.id, ...d.data() }));
     datos.sort((a, b) => {
@@ -588,7 +588,7 @@ function iniciarTiempoReal() {
       for (const d of datos) {
         if (!idsConocidos.has(d.id) && d.autorUid !== miUid) {
           // Recargar apodo por si acaba de cambiar
-          await cargarApodoPareja();
+          await cargarApodoPareja(); //LINEA 591
           // Obtener nombre de la pareja para el toast
           let nombrePareja = "";
           try {
