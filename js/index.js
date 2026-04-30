@@ -12,12 +12,10 @@ import {
   browserLocalPersistence,
   setPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { mostrarLoader } from "./loader.js";
 
 setPersistence(auth, browserLocalPersistence).then(() => {
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      mostrarLoader();
       window.location.href = "app.html";
     }
   });
