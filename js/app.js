@@ -2,7 +2,6 @@
 import { db, auth } from "./firebase.js";
 import {
   onAuthStateChanged,
-  signOut,
   browserLocalPersistence,
   setPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -33,7 +32,6 @@ const seleccionados = { mensaje: new Set(), foto: new Set(), cancion: new Set(),
 const menuBtn           = document.getElementById('menuBtn');
 const sideMenu          = document.getElementById('sideMenu');
 const overlay           = document.getElementById('overlay');
-const btnCerrarSesion   = document.getElementById('btnCerrarSesion');
 const modal             = document.getElementById('modal');
 const inputTexto        = document.getElementById('inputTexto');
 const inputCancionDiv   = document.getElementById('inputCancionDiv');
@@ -227,16 +225,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
   });
 });
 
-// ===== CERRAR SESIÓN =====
-btnCerrarSesion.onclick = async () => {
-  if (unsubscribe) unsubscribe();
-  if (miUid) {
-    await setDoc(doc(db, "usuarios", miUid), { oneSignalId: null }, { merge: true });
-  }
-  sessionStorage.removeItem("bienvenidaMostrada");
-  await signOut(auth);
-  window.location.href = "registro.html";
-};
+
 
 // ===== MENÚ =====
 menuBtn.onclick = () => {
