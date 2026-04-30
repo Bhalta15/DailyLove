@@ -234,7 +234,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
 
         await cargarApodoPareja();
         iniciarTiempoReal();
-        cargarCorazonesGuardados(); // ← carga corazones al iniciar
+        cargarCorazonesGuardados();
 
         if (typeof OneSignal !== "undefined") {
           await iniciarOneSignal();
@@ -615,6 +615,21 @@ function iniciarTiempoReal() {
 
     if (idsConocidos === null) {
       idsConocidos = new Set(datos.map(d => d.id));
+
+      // Revisar si hay contenido nuevo de la pareja desde la última visita
+      const ultimaVisita = parseInt(localStorage.getItem('ultimaVisita') || '0');
+      for (const d of datos) {
+        if (d.autorUid !== miUid) {
+          const fechaItem = d.fecha?.toDate ? d.fecha.toDate() : new Date(d.fecha);
+          if (fechaItem.getTime() > ultimaVisita) {
+            mostrarCorazon(d.tipo);
+          }
+        }
+      }
+
+      // Guardar momento actual como última visita
+      localStorage.setItem('ultimaVisita', Date.now().toString());
+
     } else {
       for (const d of datos) {
         if (!idsConocidos.has(d.id) && d.autorUid !== miUid) {
