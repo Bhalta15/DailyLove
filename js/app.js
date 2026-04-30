@@ -22,7 +22,6 @@ let unsubscribe    = null;
 let gruposAbiertos = {};
 let datosGlobal    = [];
 
-// IDs ya conocidos al cargar — para detectar solo los NUEVOS
 let idsConocidos = null;
 
 const modoEliminar  = { mensaje: false, foto: false, cancion: false, frase: false };
@@ -33,14 +32,24 @@ const seccionesConNuevo = { mensaje: false, foto: false, cancion: false, frase: 
 
 function mostrarCorazon(tipo) {
   seccionesConNuevo[tipo] = true;
+  localStorage.setItem(`heart-${tipo}`, 'true');
   const el = document.getElementById(`heart-${tipo}`);
   if (el) el.classList.remove('hidden');
 }
 
 function quitarCorazon(tipo) {
   seccionesConNuevo[tipo] = false;
+  localStorage.removeItem(`heart-${tipo}`);
   const el = document.getElementById(`heart-${tipo}`);
   if (el) el.classList.add('hidden');
+}
+
+function cargarCorazonesGuardados() {
+  ['mensaje', 'foto', 'cancion', 'frase'].forEach(tipo => {
+    if (localStorage.getItem(`heart-${tipo}`) === 'true') {
+      mostrarCorazon(tipo);
+    }
+  });
 }
 
 // ===== ELEMENTOS =====
@@ -225,6 +234,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
 
         await cargarApodoPareja();
         iniciarTiempoReal();
+        cargarCorazonesGuardados(); // ← carga corazones al iniciar
 
         if (typeof OneSignal !== "undefined") {
           await iniciarOneSignal();
@@ -261,7 +271,6 @@ document.querySelectorAll('.itemMenu').forEach(btn => {
     const seccion = btn.dataset.section;
     document.getElementById(seccion).classList.remove('hidden');
 
-    // Quitar corazón si esa sección tiene uno
     const tipoMap = { mensajes: 'mensaje', fotos: 'foto', canciones: 'cancion', frases: 'frase' };
     if (tipoMap[seccion]) quitarCorazon(tipoMap[seccion]);
 
@@ -616,7 +625,7 @@ function iniciarTiempoReal() {
             if (parejaSnap.exists()) nombrePareja = parejaSnap.data().usuario || "";
           } catch { /* silencioso */ }
           await mostrarToastInApp(d.tipo, nombrePareja);
-          mostrarCorazon(d.tipo); // ← corazón en el menú
+          mostrarCorazon(d.tipo);
         }
         idsConocidos.add(d.id);
       }
