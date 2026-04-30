@@ -2,6 +2,7 @@
 import { db, auth } from "./firebase.js";
 import {
   onAuthStateChanged,
+  signOut,
   browserLocalPersistence,
   setPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -9,7 +10,6 @@ import {
   doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { mostrarToast } from "./toast.js";
-import { mostrarLoader, ocultarLoader } from "./loader.js";
 
 // ===== ONESIGNAL APP ID =====
 const ONESIGNAL_APP_ID = "1c802966-0ba1-4c4b-8b5b-7e0d8074f499";
@@ -22,16 +22,41 @@ let unsubscribe    = null;
 let gruposAbiertos = {};
 let datosGlobal    = [];
 
-// IDs ya conocidos al cargar — para detectar solo los NUEVOS
 let idsConocidos = null;
 
 const modoEliminar  = { mensaje: false, foto: false, cancion: false, frase: false };
 const seleccionados = { mensaje: new Set(), foto: new Set(), cancion: new Set(), frase: new Set() };
 
+// ===== CORAZONES MENÚ =====
+const seccionesConNuevo = { mensaje: false, foto: false, cancion: false, frase: false };
+
+function mostrarCorazon(tipo) {
+  seccionesConNuevo[tipo] = true;
+  localStorage.setItem(`heart-${tipo}`, 'true');
+  const el = document.getElementById(`heart-${tipo}`);
+  if (el) el.classList.remove('hidden');
+}
+
+function quitarCorazon(tipo) {
+  seccionesConNuevo[tipo] = false;
+  localStorage.removeItem(`heart-${tipo}`);
+  const el = document.getElementById(`heart-${tipo}`);
+  if (el) el.classList.add('hidden');
+}
+
+function cargarCorazonesGuardados() {
+  ['mensaje', 'foto', 'cancion', 'frase'].forEach(tipo => {
+    if (localStorage.getItem(`heart-${tipo}`) === 'true') {
+      mostrarCorazon(tipo);
+    }
+  });
+}
+
 // ===== ELEMENTOS =====
 const menuBtn           = document.getElementById('menuBtn');
 const sideMenu          = document.getElementById('sideMenu');
 const overlay           = document.getElementById('overlay');
+const btnCerrarSesion   = document.getElementById('btnCerrarSesion');
 const modal             = document.getElementById('modal');
 const inputTexto        = document.getElementById('inputTexto');
 const inputCancionDiv   = document.getElementById('inputCancionDiv');
@@ -102,12 +127,10 @@ async function notificarPareja(tipo, contenidoRaw = "") {
     const oneSignalId = parejaUserSnap.data()?.oneSignalId;
     if (!oneSignalId) return;
 
-    // El apodo que ELLA me puso a mí está en su propio documento
-    const apodoQueEllaUsaParaMi = parejaUserSnap.data()?.apodoPareja || "";
+    const apodoQueEllaTieneParaMi = parejaUserSnap.data()?.apodoPareja || "";
     const miNombre = document.getElementById("userName").textContent;
-    const nombreEnNoti = apodoQueEllaUsaParaMi || miNombre;
+    const nombreEnNoti = apodoQueEllaTieneParaMi || miNombre;
 
-    // Extraer preview de texto segun tipo
     let preview = "";
     if (tipo === "mensaje" || tipo === "frase") {
       preview = contenidoRaw.length > 50
@@ -118,9 +141,8 @@ async function notificarPareja(tipo, contenidoRaw = "") {
         const parsed = JSON.parse(contenidoRaw);
         const desc = parsed.desc || "";
         preview = desc.length > 50 ? desc.substring(0, 50) + "..." : desc;
-      } catch (_e) { preview = ""; }
+      } catch { preview = ""; }
     }
-    // foto: preview vacio, server usa solo mensaje base
 
     await fetch("https://daily-love-server.onrender.com/notificar", {
       method: "POST",
@@ -139,10 +161,10 @@ async function notificarPareja(tipo, contenidoRaw = "") {
 
 // ===== TOAST IN-APP PARA CONTENIDO NUEVO DE LA PAREJA =====
 const mensajesInApp = {
-  mensaje: "💬 Nuevo mensaje",
-  foto:    "📸 Nueva foto",
-  cancion: "🎵 Nueva canción",
-  frase:   "💭 Nueva frase"
+  mensaje: "Nuevo mensaje💬",
+  foto:    "Nueva foto📸",
+  cancion: "Nueva canción🎵",
+  frase:   "Nueva frase💭"
 };
 
 let apodoDePareja = "";
@@ -152,7 +174,7 @@ async function cargarApodoPareja() {
   try {
     const snap = await getDoc(doc(db, "usuarios", miUid));
     if (snap.exists()) apodoDePareja = snap.data().apodoPareja || "";
-  } catch (_e) { apodoDePareja = ""; }
+  } catch { apodoDePareja = ""; }
 }
 
 function nombreRemitente(nombreUsuarioPareja) {
@@ -167,16 +189,9 @@ async function mostrarToastInApp(tipo, nombreUsuarioPareja) {
 }
 
 // ===== SESIÓN PERSISTENTE =====
-mostrarLoader();
-let sesionInicializada = false;
-
 setPersistence(auth, browserLocalPersistence).then(() => {
   onAuthStateChanged(auth, async (user) => {
-    if (sesionInicializada) return; // evitar que se dispare más de una vez
-    sesionInicializada = true;
-
     if (!user) {
-      ocultarLoader();
       window.location.href = "registro.html";
       return;
     }
@@ -189,6 +204,11 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         miUid        = user.uid;
         miGenero     = datos.genero;
         codigoPareja = datos.codigo;
+
+        if (!codigoPareja) {
+          window.location.href = "registro.html";
+          return;
+        }
 
         const userNameEl     = document.getElementById("userName");
         const userNameMainEl = document.getElementById("userNameMain");
@@ -211,27 +231,27 @@ setPersistence(auth, browserLocalPersistence).then(() => {
           mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
           sessionStorage.setItem("bienvenidaMostrada", "1");
         }
-      }
 
-      await cargarApodoPareja();
-      iniciarTiempoReal();
-      ocultarLoader();
+        await cargarApodoPareja();
+        iniciarTiempoReal();
+        cargarCorazonesGuardados();
 
-      if (typeof OneSignal !== "undefined") {
-        await iniciarOneSignal();
+        if (typeof OneSignal !== "undefined") {
+          await iniciarOneSignal();
+        } else {
+          window.OneSignalDeferred = window.OneSignalDeferred || [];
+          window.OneSignalDeferred.push(async () => { await iniciarOneSignal(); });
+        }
+
       } else {
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async () => { await iniciarOneSignal(); });
+        window.location.href = "registro.html";
       }
 
     } catch (error) {
-      ocultarLoader();
       console.error("Error cargando usuario:", error);
     }
   });
 });
-
-
 
 // ===== MENÚ =====
 menuBtn.onclick = () => {
@@ -248,7 +268,12 @@ function cerrarMenu() {
 document.querySelectorAll('.itemMenu').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-    document.getElementById(btn.dataset.section).classList.remove('hidden');
+    const seccion = btn.dataset.section;
+    document.getElementById(seccion).classList.remove('hidden');
+
+    const tipoMap = { mensajes: 'mensaje', fotos: 'foto', canciones: 'cancion', frases: 'frase' };
+    if (tipoMap[seccion]) quitarCorazon(tipoMap[seccion]);
+
     cerrarMenu();
   };
 });
@@ -409,7 +434,7 @@ function abrirModalEditar(d) {
       const parsed = JSON.parse(d.contenido);
       editDescCancion.value = parsed.desc || "";
       editLinkCancion.value = parsed.link || "";
-    } catch (_e) {
+    } catch {
       editLinkCancion.value = d.contenido;
     }
   } else if (d.tipo === "foto") {
@@ -579,7 +604,6 @@ function iniciarTiempoReal() {
 
   const ref = collection(db, "parejas", codigoPareja, "contenido");
 
-  // IMPORTANTE: async para poder usar await adentro
   unsubscribe = onSnapshot(ref, async (snapshot) => {
     const datos = [];
     snapshot.forEach(d => datos.push({ id: d.id, ...d.data() }));
@@ -589,12 +613,24 @@ function iniciarTiempoReal() {
       return fb - fa;
     });
 
-    // ===== DETECCIÓN DE CONTENIDO NUEVO IN-APP =====
     if (idsConocidos === null) {
-      // Primera carga: registrar todos los IDs existentes sin mostrar toast
       idsConocidos = new Set(datos.map(d => d.id));
+
+      // Revisar si hay contenido nuevo de la pareja desde la última visita
+      const ultimaVisita = parseInt(localStorage.getItem('ultimaVisita') || '0');
+      for (const d of datos) {
+        if (d.autorUid !== miUid) {
+          const fechaItem = d.fecha?.toDate ? d.fecha.toDate() : new Date(d.fecha);
+          if (fechaItem.getTime() > ultimaVisita) {
+            mostrarCorazon(d.tipo);
+          }
+        }
+      }
+
+      // Guardar momento actual como última visita
+      localStorage.setItem('ultimaVisita', Date.now().toString());
+
     } else {
-      // Cargas posteriores: detectar IDs nuevos que no son míos
       for (const d of datos) {
         if (!idsConocidos.has(d.id) && d.autorUid !== miUid) {
           await cargarApodoPareja();
@@ -602,8 +638,9 @@ function iniciarTiempoReal() {
           try {
             const parejaSnap = await getDoc(doc(db, "usuarios", d.autorUid));
             if (parejaSnap.exists()) nombrePareja = parejaSnap.data().usuario || "";
-          } catch (_e) { /* silencioso */ }
+          } catch { /* silencioso */ }
           await mostrarToastInApp(d.tipo, nombrePareja);
+          mostrarCorazon(d.tipo);
         }
         idsConocidos.add(d.id);
       }
@@ -718,7 +755,7 @@ function crearCardHTML(d, enModoEliminar) {
     try {
       const parsed = JSON.parse(d.contenido);
       desc = parsed.desc; link = parsed.link;
-    } catch (_e) { link = d.contenido; }
+    } catch { link = d.contenido; }
 
     return `
       <div data-id="${d.id}"
@@ -870,7 +907,7 @@ function renderInicio(datos) {
     canciones.map(c => {
       let desc = "", link = "";
       try { const p = JSON.parse(c.contenido); desc = p.desc; link = p.link; }
-      catch (_e) { link = c.contenido; }
+      catch { link = c.contenido; }
       return `
         <li class="mb-2">
           ${desc ? `<p class="text-gray-600 text-sm break-all">"${desc}"</p>` : ""}
