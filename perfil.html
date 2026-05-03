@@ -22,21 +22,24 @@
     <h1 class="absolute left-1/2 -translate-x-1/2 text-2xl font-bold text-pink-600">Perfil</h1>
   </header>
 
-  <!-- MODAL VER FOTO PROPIA -->
-  <div id="modalVerFoto"
-    class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
-    <div class="relative max-w-sm w-full">
-      <button id="btnCerrarVerFoto" class="absolute top-2 right-2 text-white text-xl hover:text-gray-300 transition">✕</button>
-      <img id="fotoGrandePerfil" src="" class="w-full rounded-2xl object-cover shadow-xl">
-    </div>
+<!-- MODAL VER FOTO PROPIA -->
+<div id="modalVerFoto"
+  class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl p-4 max-w-sm w-full relative">
+    <button id="btnCerrarVerFoto" 
+      class="absolute top-2 right-2 w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white hover:bg-purple-700 transition text-sm">✕</button>
+    <img id="fotoGrandePerfil" src="" class="w-full rounded-xl object-cover shadow-xl">
   </div>
+</div>
 
-  <!-- MODAL VER FOTO GRANDE PAREJA -->
+<!-- MODAL VER FOTO GRANDE PAREJA -->
 <div id="modalVerFotoPareja"
-  class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-60 p-4">
-  <div class="relative max-w-sm w-full">
-    <button id="btnCerrarVerFotoPareja" class="absolute top-2 right-2 text-white text-xl hover:text-gray-300 transition">✕</button>
-    <img id="fotoGrandePareja" src="" class="w-full rounded-2xl object-cover shadow-xl">
+  class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4"
+  style="z-index: 70;">
+  <div class="bg-white rounded-2xl p-4 max-w-sm w-full relative">
+    <button id="btnCerrarVerFotoPareja" 
+      class="absolute top-2 right-2 w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white hover:bg-purple-700 transition text-sm">✕</button>
+    <img id="fotoGrandePareja" src="" class="w-full rounded-xl object-cover shadow-xl">
   </div>
 </div>
 
