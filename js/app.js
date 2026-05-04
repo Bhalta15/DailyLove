@@ -21,6 +21,7 @@ let miGenero       = null;
 let unsubscribe    = null;
 let gruposAbiertos = {};
 let datosGlobal    = [];
+let seccionActiva  = "inicio"; // ← sección visible actualmente
 
 let idsConocidos = null;
 
@@ -228,7 +229,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         }
 
         if (!sessionStorage.getItem("bienvenidaMostrada")) {
-          mostrarToast(`¡Bienvenido ${datos.usuario}!`, "info");
+          mostrarToast(`¡Bienvenida ${datos.usuario}!`, "info");
           sessionStorage.setItem("bienvenidaMostrada", "1");
         }
 
@@ -270,6 +271,7 @@ document.querySelectorAll('.itemMenu').forEach(btn => {
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
     const seccion = btn.dataset.section;
     document.getElementById(seccion).classList.remove('hidden');
+    seccionActiva = seccion; // ← actualizar sección activa
 
     const tipoMap = { mensajes: 'mensaje', fotos: 'foto', canciones: 'cancion', frases: 'frase' };
     if (tipoMap[seccion]) quitarCorazon(tipoMap[seccion]);
@@ -403,7 +405,7 @@ async function guardarEnFirebase(contenido) {
       autorGenero: miGenero,
       reaccion:    null
     });
-    mostrarToast("¡Guardado!", "exito");
+    mostrarToast("¡Enviado!", "exito");
     cerrarModal();
     await notificarPareja(tipoActual, contenido);
   } catch (error) {
@@ -616,7 +618,6 @@ function iniciarTiempoReal() {
     if (idsConocidos === null) {
       idsConocidos = new Set(datos.map(d => d.id));
 
-      // Revisar si hay contenido nuevo de la pareja desde la última visita
       const ultimaVisita = parseInt(localStorage.getItem('ultimaVisita') || '0');
       for (const d of datos) {
         if (d.autorUid !== miUid) {
@@ -627,7 +628,6 @@ function iniciarTiempoReal() {
         }
       }
 
-      // Guardar momento actual como última visita
       localStorage.setItem('ultimaVisita', Date.now().toString());
 
     } else {
@@ -640,7 +640,12 @@ function iniciarTiempoReal() {
             if (parejaSnap.exists()) nombrePareja = parejaSnap.data().usuario || "";
           } catch { /* silencioso */ }
           await mostrarToastInApp(d.tipo, nombrePareja);
-          mostrarCorazon(d.tipo);
+
+          // Solo mostrar corazón si NO estás en esa sección
+          const seccionDelTipo = { mensaje: 'mensajes', foto: 'fotos', cancion: 'canciones', frase: 'frases' };
+          if (seccionActiva !== seccionDelTipo[d.tipo]) {
+            mostrarCorazon(d.tipo);
+          }
         }
         idsConocidos.add(d.id);
       }

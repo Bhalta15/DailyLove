@@ -122,7 +122,7 @@ function iniciarNotisPerfil(codigoPar, miUidLocal) {
       snapshot.forEach(d => {
         if (!idsConocidosPerfil.has(d.id) && d.data().autorUid !== miUidLocal) {
           const tipo = d.data().tipo;
-          mostrarToast(mensajesInApp[tipo] || "Tu pareja compartió algo nuevo 💕", "info");
+          mostrarToast(mensajesInApp[tipo] || "Tu pareja compartió algo nuevo", "info");
         }
         idsConocidosPerfil.add(d.id);
       });
