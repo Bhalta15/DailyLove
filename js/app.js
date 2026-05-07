@@ -258,8 +258,8 @@ function mostrarToastDeshacer(tipo, items) {
     _ocultarToastDeshacer(toastEl);
     if (deshacerDatos) {
       const datos = deshacerDatos;
-      deshacerDatos = null;
       await _ejecutarCommit(datos);
+      deshacerDatos = null; // limpiar DESPUÉS del commit para que el snapshot no flashee
     }
   }, 4000);
 }
