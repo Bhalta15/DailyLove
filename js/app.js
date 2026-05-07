@@ -25,11 +25,12 @@ let seccionActiva  = "inicio";
 let idsConocidos   = null;
 
 // ===== MODO POR SECCIÓN =====
-// modo: null | 'editar' | 'eliminar'
 const modoSeccion = { mensaje: null, foto: null, cancion: null, frase: null };
-
-// Checkboxes seleccionados para eliminar
 const seleccionados = { mensaje: new Set(), foto: new Set(), cancion: new Set(), frase: new Set() };
+
+// ===== MODO PLANES =====
+let modoPlan = null; // null | 'editar' | 'eliminar'
+const seleccionadosPlan = new Set();
 
 // ===== CORAZONES MENÚ =====
 function mostrarCorazon(tipo) {
@@ -166,7 +167,7 @@ async function mostrarToastInApp(tipo, nombreUsuarioPareja) {
 
 // ===== TOAST CON DESHACER =====
 let deshacerTimeout = null;
-let deshacerDatos   = null; // { tipo, items: [{id, data}] }
+let deshacerDatos   = null;
 
 function mostrarToastDeshacer(tipo, items) {
   // Cancelar cualquier eliminación pendiente anterior y commitear
@@ -176,28 +177,35 @@ function mostrarToastDeshacer(tipo, items) {
   }
   deshacerDatos = { tipo, items };
 
-  // Crear toast
+  // Crear o reusar el elemento toast
   let toastEl = document.getElementById('toast-deshacer');
   if (!toastEl) {
     toastEl = document.createElement('div');
     toastEl.id = 'toast-deshacer';
-    toastEl.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg transition-all duration-300';
+    // Posición fija, oculto inicialmente
+    toastEl.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;display:flex;align-items:center;gap:12px;background:#7c3aed;color:white;font-size:14px;padding:12px 20px;border-radius:16px;box-shadow:0 8px 24px rgba(124,58,237,0.35);border:2px solid #6d28d9;white-space:nowrap;';
     document.body.appendChild(toastEl);
   }
+
   const n = items.length;
   toastEl.innerHTML = `<span>${n > 1 ? `${n} elementos eliminados` : 'Eliminado'}</span>
-    <button id="btn-deshacer" class="font-bold text-pink-300 hover:text-pink-200 underline">Deshacer</button>`;
-  toastEl.classList.remove('opacity-0', 'pointer-events-none');
-  toastEl.classList.add('opacity-100');
+    <button id="btn-deshacer" style="font-weight:700;color:#f9a8d4;text-decoration:underline;background:none;border:none;cursor:pointer;padding:0;">Deshacer</button>`;
+
+  // Animar entrada (slide-up)
+  toastEl.style.display = 'flex';
+  toastEl.classList.remove('slide-down');
+  toastEl.classList.add('slide-up');
 
   document.getElementById('btn-deshacer').onclick = () => {
     clearTimeout(deshacerTimeout);
     const itemsRestaurar = deshacerDatos?.items || [];
     const tipoRestaurar  = deshacerDatos?.tipo;
     deshacerDatos = null;
-    toastEl.classList.add('opacity-0', 'pointer-events-none');
 
-    // FIX 4: Reinsertar los items en datosGlobal y re-renderizar sin recargar
+    // Animar salida
+    _ocultarToastDeshacer(toastEl);
+
+    // Reinsertar items y re-renderizar
     datosGlobal = [...datosGlobal, ...itemsRestaurar].sort((a, b) => {
       const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
       const fb = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha);
@@ -209,12 +217,22 @@ function mostrarToastDeshacer(tipo, items) {
   };
 
   deshacerTimeout = setTimeout(async () => {
-    toastEl.classList.add('opacity-0', 'pointer-events-none');
+    _ocultarToastDeshacer(toastEl);
     if (deshacerDatos) {
       await commitEliminar(deshacerDatos);
       deshacerDatos = null;
     }
   }, 4000);
+}
+
+function _ocultarToastDeshacer(toastEl) {
+  if (!toastEl) return;
+  toastEl.classList.remove('slide-up');
+  toastEl.classList.add('slide-down');
+  setTimeout(() => {
+    toastEl.style.display = 'none';
+    toastEl.classList.remove('slide-down');
+  }, 320);
 }
 
 async function commitEliminar({ tipo, items }) {
@@ -293,7 +311,6 @@ function resetearModoSeccion(tipo) {
   seleccionados[tipo].clear();
   ocultarBarraFlotante(tipo);
   actualizarBotonesHeader(tipo);
-  // FIX 2: re-renderizar la sección para quitar checkboxes/cursores del modo anterior
   rerenderSeccion(tipo);
 }
 
@@ -301,6 +318,7 @@ function resetearTodosModos() {
   ['mensaje', 'foto', 'cancion', 'frase'].forEach(tipo => {
     if (modoSeccion[tipo]) resetearModoSeccion(tipo);
   });
+  resetearModoEditarPlanes();
 }
 
 document.querySelectorAll('.itemMenu').forEach(btn => {
@@ -313,14 +331,12 @@ document.querySelectorAll('.itemMenu').forEach(btn => {
     resetearTodosModos();
     const tipoMap = { mensajes: 'mensaje', fotos: 'foto', canciones: 'cancion', frases: 'frase', planes: 'plan' };
     if (tipoMap[seccion]) quitarCorazon(tipoMap[seccion]);
-    if (seccion !== 'planes') resetearModoEditarPlanes();
     if (seccion === 'planes') renderPlanes();
     cerrarMenu();
   };
 });
 
 // ===== MENÚ DE TRES PUNTITOS =====
-// Cierra cualquier menú abierto al hacer clic fuera
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.menu-puntitos-container')) {
     document.querySelectorAll('.menu-puntitos-dropdown').forEach(m => m.classList.add('hidden'));
@@ -329,7 +345,6 @@ document.addEventListener('click', (e) => {
 
 window.toggleMenuPuntitos = (tipo) => {
   const dropdown = document.getElementById(`dropdown-${tipo}`);
-  // cerrar otros
   document.querySelectorAll('.menu-puntitos-dropdown').forEach(m => {
     if (m.id !== `dropdown-${tipo}`) m.classList.add('hidden');
   });
@@ -337,11 +352,9 @@ window.toggleMenuPuntitos = (tipo) => {
 };
 
 window.elegirModo = (tipo, modo) => {
-  // Cerrar dropdown
   document.getElementById(`dropdown-${tipo}`)?.classList.add('hidden');
 
   if (modoSeccion[tipo] === modo) {
-    // Si ya estaba en ese modo, cancelar
     resetearModoSeccion(tipo);
     rerenderSeccion(tipo);
     return;
@@ -361,47 +374,149 @@ window.cancelarModo = (tipo) => {
   rerenderSeccion(tipo);
 };
 
-// ===== ACTUALIZAR HEADER (botones ⋯ / Cancelar y +) =====
-function actualizarBotonesHeader(tipo) {
-  const btnNuevo    = document.getElementById(`btnNuevo${capitalizar(tipo)}`);
-  const btnPuntitos = document.getElementById(`btnPuntitos${capitalizar(tipo)}`);
-  const btnCancelar = document.getElementById(`btnCancelar${capitalizar(tipo)}`);
+// ===== MODO EXTRAS (PLANES/CITAS) =====
+window.elegirModoPlan = (modo) => {
+  document.getElementById('dropdown-plan')?.classList.add('hidden');
 
-  const enModo = modoSeccion[tipo] !== null;
+  if (modoPlan === modo) {
+    resetearModoEditarPlanes();
+    return;
+  }
 
+  modoPlan = modo;
+  seleccionadosPlan.clear();
+  _actualizarBotonesHeaderPlan();
+  _renderPlanesHTML();
+
+  if (modo === 'eliminar') mostrarBarraFlotantePlan();
+  else ocultarBarraFlotantePlan();
+};
+
+window.cancelarModoPlan = () => {
+  resetearModoEditarPlanes();
+};
+
+function _actualizarBotonesHeaderPlan() {
+  const btnNuevo    = document.getElementById('btnNuevoPlan');
+  const btnPuntitos = document.getElementById('btnPuntitosPlan');
+  const btnCancelar = document.getElementById('btnCancelarPlan');
+  const enModo = modoPlan !== null;
   if (btnNuevo)    btnNuevo.classList.toggle('hidden', enModo);
   if (btnPuntitos) btnPuntitos.classList.toggle('hidden', enModo);
   if (btnCancelar) btnCancelar.classList.toggle('hidden', !enModo);
 }
 
-// ===== BARRA FLOTANTE (modo eliminar) =====
+function mostrarBarraFlotantePlan() {
+  let barra = document.getElementById('barra-plan');
+  if (!barra) {
+    barra = document.createElement('div');
+    barra.id = 'barra-plan';
+    barra.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;background:#ede9fe;border:2px solid #7c3aed;border-radius:16px;padding:10px 20px;box-shadow:0 8px 24px rgba(124,58,237,0.2);white-space:nowrap;';
+    document.body.appendChild(barra);
+  }
+  _actualizarBarraFlotantePlan();
+  barra.classList.remove('hidden');
+  barra.classList.remove('slide-down');
+  barra.classList.add('slide-up');
+}
+
+function ocultarBarraFlotantePlan() {
+  const barra = document.getElementById('barra-plan');
+  if (!barra || barra.classList.contains('hidden')) return;
+  barra.classList.remove('slide-up');
+  barra.classList.add('slide-down');
+  setTimeout(() => { barra.classList.add('hidden'); barra.classList.remove('slide-down'); }, 320);
+}
+
+function _actualizarBarraFlotantePlan() {
+  const barra = document.getElementById('barra-plan');
+  if (!barra) return;
+  const n = seleccionadosPlan.size;
+  barra.innerHTML = `
+    <span style="font-size:14px;color:#6d28d9;font-weight:500;">${n} seleccionado${n !== 1 ? 's' : ''}</span>
+    <button onclick="solicitarEliminarPlanes()"
+      style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:${n > 0 ? 'pointer' : 'not-allowed'};background:${n > 0 ? '#7c3aed' : '#ddd6fe'};color:${n > 0 ? 'white' : '#a78bfa'};">
+      ${basureroSVG} Eliminar${n > 0 ? ` (${n})` : ''}
+    </button>`;
+}
+
+window.solicitarEliminarPlanes = () => {
+  const n = seleccionadosPlan.size;
+  if (n === 0) return;
+
+  const textoModal = document.querySelector('#modalEliminar p');
+  if (textoModal) textoModal.textContent = `¿Eliminar ${n} ${n !== 1 ? 'elementos seleccionados' : 'elemento seleccionado'}?`;
+
+  modalEliminar.classList.remove('hidden');
+  modalEliminar.classList.add('flex');
+
+  const nuevoAceptar  = aceptarEliminar.cloneNode(true);
+  const nuevoCancelar = cancelarEliminar.cloneNode(true);
+  aceptarEliminar.replaceWith(nuevoAceptar);
+  cancelarEliminar.replaceWith(nuevoCancelar);
+
+  nuevoCancelar.onclick = () => {
+    modalEliminar.classList.add('hidden');
+    modalEliminar.classList.remove('flex');
+  };
+
+  nuevoAceptar.onclick = async () => {
+    modalEliminar.classList.add('hidden');
+    modalEliminar.classList.remove('flex');
+    const ids = [...seleccionadosPlan];
+    try {
+      for (const id of ids) {
+        await deleteDoc(doc(db, 'parejas', codigoPareja, 'planes', id));
+      }
+      mostrarToast(`${ids.length > 1 ? ids.length + ' elementos eliminados' : 'Eliminado'}`, 'exito');
+    } catch (e) { mostrarToast('Error al eliminar', 'error'); console.error(e); }
+    resetearModoEditarPlanes();
+  };
+};
+
+// ===== ACTUALIZAR HEADER (botones ⋯ / Listo y +) =====
+function actualizarBotonesHeader(tipo) {
+  const btnNuevo    = document.getElementById(`btnNuevo${capitalizar(tipo)}`);
+  const btnPuntitos = document.getElementById(`btnPuntitos${capitalizar(tipo)}`);
+  const btnCancelar = document.getElementById(`btnCancelar${capitalizar(tipo)}`);
+  const enModo = modoSeccion[tipo] !== null;
+  if (btnNuevo)    btnNuevo.classList.toggle('hidden', enModo);
+  if (btnPuntitos) btnPuntitos.classList.toggle('hidden', enModo);
+  if (btnCancelar) btnCancelar.classList.toggle('hidden', !enModo);
+}
+
+// ===== BARRA FLOTANTE (modo eliminar contenido) =====
 function mostrarBarraFlotante(tipo) {
   let barra = document.getElementById(`barra-${tipo}`);
   if (!barra) {
     barra = document.createElement('div');
     barra.id = `barra-${tipo}`;
-    barra.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white border border-red-200 shadow-xl rounded-2xl px-5 py-3 transition-all duration-300';
+    // Estilos inline para morado claro con contorno
+    barra.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;background:#ede9fe;border:2px solid #7c3aed;border-radius:16px;padding:10px 20px;box-shadow:0 8px 24px rgba(124,58,237,0.2);white-space:nowrap;';
     document.body.appendChild(barra);
   }
   actualizarBarraFlotante(tipo);
   barra.classList.remove('hidden');
+  barra.classList.remove('slide-down');
+  barra.classList.add('slide-up');
 }
 
 function ocultarBarraFlotante(tipo) {
   const barra = document.getElementById(`barra-${tipo}`);
-  if (barra) barra.classList.add('hidden');
+  if (!barra || barra.classList.contains('hidden')) return;
+  barra.classList.remove('slide-up');
+  barra.classList.add('slide-down');
+  setTimeout(() => { barra.classList.add('hidden'); barra.classList.remove('slide-down'); }, 320);
 }
 
 function actualizarBarraFlotante(tipo) {
   const barra = document.getElementById(`barra-${tipo}`);
   if (!barra) return;
   const n = seleccionados[tipo].size;
-  // FIX 3: todo en una sola línea, compacto
   barra.innerHTML = `
-    <span class="text-sm text-gray-500 whitespace-nowrap">${n} seleccionado${n !== 1 ? 's' : ''}</span>
+    <span style="font-size:14px;color:#6d28d9;font-weight:500;">${n} seleccionado${n !== 1 ? 's' : ''}</span>
     <button onclick="solicitarEliminarSeleccionados('${tipo}')"
-      class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition
-        ${n > 0 ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}">
+      style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:${n > 0 ? 'pointer' : 'not-allowed'};background:${n > 0 ? '#7c3aed' : '#ddd6fe'};color:${n > 0 ? 'white' : '#a78bfa'};">
       ${basureroSVG} Eliminar${n > 0 ? ` (${n})` : ''}
     </button>`;
 }
@@ -411,14 +526,12 @@ window.solicitarEliminarSeleccionados = (tipo) => {
   const n = seleccionados[tipo].size;
   if (n === 0) return;
 
-  // Reusar modal de eliminar existente
   const textoModal = document.querySelector('#modalEliminar p');
   if (textoModal) textoModal.textContent = `¿Eliminar ${n} elemento${n !== 1 ? 's' : ''} seleccionado${n !== 1 ? 's' : ''}?`;
 
   modalEliminar.classList.remove('hidden');
   modalEliminar.classList.add('flex');
 
-  // Clonar botones para limpiar listeners anteriores
   const nuevoAceptar  = aceptarEliminar.cloneNode(true);
   const nuevoCancelar = cancelarEliminar.cloneNode(true);
   aceptarEliminar.replaceWith(nuevoAceptar);
@@ -433,17 +546,12 @@ window.solicitarEliminarSeleccionados = (tipo) => {
     modalEliminar.classList.add('hidden');
     modalEliminar.classList.remove('flex');
 
-    const ids    = [...seleccionados[tipo]];
-    const items  = datosGlobal.filter(d => ids.includes(d.id));
+    const ids   = [...seleccionados[tipo]];
+    const items = datosGlobal.filter(d => ids.includes(d.id));
 
-    // Quitar del datosGlobal temporalmente (para que el re-render no las muestre)
     datosGlobal = datosGlobal.filter(d => !ids.includes(d.id));
     rerenderSeccion(tipo);
-
-    // Salir del modo eliminar
     resetearModoSeccion(tipo);
-
-    // Mostrar toast con deshacer
     mostrarToastDeshacer(tipo, items);
   };
 };
@@ -656,19 +764,16 @@ function ojitaSVG() {
     </svg></button>`;
 }
 
-// ===== CREAR CARD =====
+// ===== CREAR CARD HTML =====
 function crearCardHTML(d, modo) {
   const borde   = borderPorGenero(d.autorGenero);
   const corazon = heartSVG(d);
   const esMio   = d.autorUid === miUid;
 
-  // Modo eliminar: checkbox en cards propias, atenuado en ajenas
   if (modo === 'eliminar') {
-    const opAjena     = !esMio ? 'opacity-40' : '';
+    const opAjena      = !esMio ? 'opacity-40' : '';
     const seleccionado = seleccionados[d.tipo]?.has(d.id);
-    const checkClass   = seleccionado
-      ? 'bg-purple-500 border-purple-500'
-      : 'bg-white border-gray-300';
+    const checkClass   = seleccionado ? 'bg-purple-500 border-purple-500' : 'bg-white border-gray-300';
 
     const checkHTML = esMio
       ? `<div class="checkbox-card absolute top-3 left-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${checkClass}">
@@ -678,52 +783,38 @@ function crearCardHTML(d, modo) {
     if (d.tipo === "mensaje" || d.tipo === "frase") {
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
         class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
-        ${checkHTML}
-        <p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>
-        ${corazon}</div>`;
+        ${checkHTML}<p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>${corazon}</div>`;
     }
     if (d.tipo === "foto") {
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
         class="bg-white shadow-lg rounded-xl p-3 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
-        ${checkHTML}
-        <div class="w-full h-48 overflow-hidden rounded-lg">
-          <img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">
-        </div>
-        ${corazon}</div>`;
+        ${checkHTML}<div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}</div>`;
     }
     if (d.tipo === "cancion") {
       let desc = "", link = "";
       try { const p = JSON.parse(d.contenido); desc = p.desc; link = p.link; } catch { link = d.contenido; }
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
         class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
-        ${checkHTML}
-        ${desc ? `<p class="text-gray-700 text-base mb-3 break-all">"${desc}"</p>` : ""}
+        ${checkHTML}${desc ? `<p class="text-gray-700 text-base mb-3 break-all">"${desc}"</p>` : ""}
         <div class="flex items-center justify-between">
           <span class="text-gray-400 text-sm truncate max-w-[70%]">${link}</span>
           <span class="ml-2 px-3 py-1.5 bg-gray-200 text-gray-400 text-sm rounded-lg whitespace-nowrap cursor-not-allowed">Escuchar ▶</span>
-        </div>
-        ${corazon}</div>`;
+        </div>${corazon}</div>`;
     }
   }
 
-  // Modo editar: cards propias clickeables, ajenas atenuadas
   if (modo === 'editar') {
-    const opAjena     = !esMio ? 'opacity-40' : '';
+    const opAjena      = !esMio ? 'opacity-40' : '';
     const cursorEditar = esMio ? 'cursor-pointer hover:border-purple-400' : '';
-
     if (d.tipo === "mensaje" || d.tipo === "frase") {
       return `<div data-id="${d.id}" data-editar="${esMio}"
         class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
-        <p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>
-        ${corazon}</div>`;
+        <p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>${corazon}</div>`;
     }
     if (d.tipo === "foto") {
       return `<div data-id="${d.id}" data-editar="${esMio}"
         class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
-        <div class="w-full h-48 overflow-hidden rounded-lg">
-          <img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">
-        </div>
-        ${corazon}</div>`;
+        <div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}</div>`;
     }
     if (d.tipo === "cancion") {
       let desc = "", link = "";
@@ -734,24 +825,20 @@ function crearCardHTML(d, modo) {
         <div class="flex items-center justify-between">
           <span class="text-gray-400 text-sm truncate max-w-[70%]">${link}</span>
           <span class="ml-2 px-3 py-1.5 bg-gray-200 text-gray-400 text-sm rounded-lg whitespace-nowrap cursor-not-allowed">Escuchar ▶</span>
-        </div>
-        ${corazon}</div>`;
+        </div>${corazon}</div>`;
     }
   }
 
-  // ===== MODO NORMAL =====
+  // Modo normal
   if (d.tipo === "mensaje" || d.tipo === "frase") {
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none">
-      <p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>
-      ${corazon}</div>`;
+      <p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>${corazon}</div>`;
   }
   if (d.tipo === "foto") {
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none">
-      <div class="w-full h-48 overflow-hidden rounded-lg">
-        <img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">
-      </div>
+      <div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>
       ${corazon}${ojitaSVG()}</div>`;
   }
   if (d.tipo === "cancion") {
@@ -763,8 +850,7 @@ function crearCardHTML(d, modo) {
       <div class="flex items-center justify-between">
         <a href="${link}" target="_blank" class="text-sky-500 hover:underline text-sm truncate max-w-[70%]">${link}</a>
         <a href="${link}" target="_blank" class="ml-2 px-3 py-1.5 bg-sky-400 hover:bg-sky-500 text-white text-sm rounded-lg transition whitespace-nowrap">Escuchar ▶</a>
-      </div>
-      ${corazon}</div>`;
+      </div>${corazon}</div>`;
   }
 
   return "";
@@ -819,7 +905,6 @@ function renderPorFecha(tipo, datos) {
 
   cont.innerHTML = html;
 
-  // ===== ASIGNAR EVENTOS =====
   datos.forEach(d => {
     const cardEl = cont.querySelector(`[data-id="${d.id}"]`);
     if (!cardEl) return;
@@ -838,7 +923,6 @@ function renderPorFecha(tipo, datos) {
         cardEl.addEventListener('click', () => abrirModalEditar(d));
       }
     } else {
-      // Modo normal
       agregarDobleTap(cardEl, d);
       if (d.tipo === "foto") {
         const ojito = cardEl.querySelector(".btn-ver-foto");
@@ -949,7 +1033,6 @@ function iniciarTiempoReal() {
       return fb - fa;
     });
 
-    // Si hay items pendientes de deshacer, preservarlos fuera de datosGlobal
     const idsPendientes = deshacerDatos ? new Set(deshacerDatos.items.map(i => i.id)) : new Set();
 
     if (idsConocidos === null) {
@@ -979,16 +1062,6 @@ function iniciarTiempoReal() {
       }
     }
 
-    // Combinar datos del servidor con los pendientes de deshacer
-    const datosFiltrados = datos.filter(d => !idsPendientes.has(d.id));
-    const itemsPendientes = deshacerDatos ? deshacerDatos.items.map(i => ({ id: i.id, ...i.data || i })) : [];
-    datosGlobal = [...datosFiltrados, ...deshacerDatos?.items || []].sort((a, b) => {
-      const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
-      const fb = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha);
-      return fb - fa;
-    });
-
-    // No re-renderizar items que están en modo "pendiente de deshacer"
     const datosParaRender = datos.filter(d => !idsPendientes.has(d.id));
     datosGlobal = datosParaRender;
     renderTodo(datosParaRender);
@@ -997,7 +1070,6 @@ function iniciarTiempoReal() {
 
 // ===== PLANES =====
 let tabPlanActual    = "cita";
-let modoEditarPlanes = false;
 let planEditandoId   = null;
 
 const modalPlan       = document.getElementById('modalPlan');
@@ -1009,15 +1081,11 @@ const cancelarPlan    = document.getElementById('cancelarPlan');
 const guardarPlan     = document.getElementById('guardarPlan');
 
 function resetearModoEditarPlanes() {
-  if (!modoEditarPlanes) return;
-  modoEditarPlanes = false;
-  const btn = document.getElementById('btnEditarPlan');
-  if (!btn) return;
-  btn.classList.add('bg-purple-100', 'text-purple-600');
-  btn.classList.remove('bg-purple-500', 'text-white');
-  btn.innerHTML = lapizSVG;
-  const btnNuevo = document.getElementById('btnNuevoPlan');
-  if (btnNuevo) btnNuevo.classList.remove('hidden');
+  if (modoPlan === null) return;
+  modoPlan = null;
+  seleccionadosPlan.clear();
+  ocultarBarraFlotantePlan();
+  _actualizarBotonesHeaderPlan();
   _renderPlanesHTML();
 }
 
@@ -1035,30 +1103,13 @@ document.querySelectorAll('.tabPlan').forEach(btn => {
   };
 });
 
-window.activarModoEditarPlanes = () => {
-  modoEditarPlanes = !modoEditarPlanes;
-  const btn      = document.getElementById('btnEditarPlan');
-  const btnNuevo = document.getElementById('btnNuevoPlan');
-  if (modoEditarPlanes) {
-    btn.classList.remove('bg-purple-100', 'text-purple-600');
-    btn.classList.add('bg-purple-500', 'text-white');
-    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`;
-    if (btnNuevo) btnNuevo.classList.add('hidden');
-  } else {
-    btn.classList.add('bg-purple-100', 'text-purple-600');
-    btn.classList.remove('bg-purple-500', 'text-white');
-    btn.innerHTML = lapizSVG;
-    if (btnNuevo) btnNuevo.classList.remove('hidden');
-  }
-  _renderPlanesHTML();
-};
-
 window.abrirModalPlan = (d = null) => {
   planEditandoId = d ? d.id : null;
-  modalPlanTitulo.textContent    = d ? 'Editar' : 'Nuevo';
+  const tab = d ? d.tab : tabPlanActual;
+  const nombreTab = tab === 'cita' ? 'cita' : 'plan';
+  modalPlanTitulo.textContent    = d ? `Editar ${nombreTab}` : (tab === 'cita' ? 'Nueva cita' : 'Nuevo plan');
   inputPlanTexto.value           = d ? d.texto : '';
   guardarPlan.textContent        = d ? 'Aceptar' : 'Enviar';
-  const tab = d ? d.tab : tabPlanActual;
   labelPlanFecha.textContent     = tab === 'cita' ? 'Fecha de la cita (opcional)' : 'Fecha del plan (opcional)';
   inputPlanFecha.type            = 'date';
   inputPlanFecha.value           = d?.fechaPlan || '';
@@ -1117,23 +1168,6 @@ window.desmarcarCompletado = async (id, tab) => {
   nc.onclick = () => { modalConf.classList.add('hidden'); modalConf.classList.remove('flex'); };
 };
 
-window.eliminarPlan = async (id, tab) => {
-  const nombreTab = tab === 'cita' ? 'cita' : 'plan';
-  const modalConf = document.getElementById('modalConfirmarEliminarPlan');
-  let btnAceptar  = document.getElementById('aceptarEliminarPlan');
-  let btnCancelar = document.getElementById('cancelarEliminarPlan');
-  document.getElementById('textoEliminarPlan').textContent = `¿Estás seguro de eliminar esta ${nombreTab}?`;
-  modalConf.classList.remove('hidden'); modalConf.classList.add('flex');
-  const na = btnAceptar.cloneNode(true); const nc = btnCancelar.cloneNode(true);
-  btnAceptar.replaceWith(na); btnCancelar.replaceWith(nc);
-  na.onclick = async () => {
-    modalConf.classList.add('hidden'); modalConf.classList.remove('flex');
-    try { await deleteDoc(doc(db, 'parejas', codigoPareja, 'planes', id)); mostrarToast('¡Eliminado!', 'exito'); }
-    catch (e) { mostrarToast('Error al eliminar', 'error'); console.error(e); }
-  };
-  nc.onclick = () => { modalConf.classList.add('hidden'); modalConf.classList.remove('flex'); };
-};
-
 function renderPlanes() {
   if (renderPlanes._unsub) { _renderPlanesHTML(); return; }
   const ref = collection(db, 'parejas', codigoPareja, 'planes');
@@ -1169,27 +1203,64 @@ function _renderPlanesHTML() {
       const emoji = d.tab === 'cita' ? '📅' : '⏳';
       fechaLinea = `<p class="text-xs text-purple-400 mt-1">${emoji} ${formatearFechaPlan(d.fechaPlan)}</p>`;
     }
-    const cardClick  = modoEditarPlanes ? `onclick='abrirModalPlan(${JSON.stringify(d).replace(/'/g, "&#39;")})'` : '';
-    const cursorEdit = modoEditarPlanes ? 'cursor-pointer hover:border-purple-600' : '';
-    const btnElim    = modoEditarPlanes
-      ? `<button onclick="event.stopPropagation(); eliminarPlan('${d.id}', '${d.tab}')"
-          class="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-400 hover:bg-red-200 transition">
-          ${basureroSVG}
-        </button>` : '';
-    const btnCirculo = !modoEditarPlanes ? (
-      !d.completado
-        ? `<button onclick="marcarCompletado('${d.id}')" title="Marcar como completado"
-            class="absolute top-3 right-3 w-7 h-7 rounded-full border-2 border-purple-300 hover:bg-purple-100 hover:border-purple-500 transition flex items-center justify-center"></button>`
-        : `<button onclick="desmarcarCompletado('${d.id}', '${d.tab}')" title="Desmarcar"
-            class="absolute top-3 right-3 w-7 h-7 rounded-full border-2 border-green-400 bg-green-100 hover:bg-green-200 transition flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-            </svg></button>`
-    ) : '';
 
-    return `<div ${cardClick} class="bg-white shadow rounded-xl p-4 border-2 border-purple-400 relative transition-all ${d.completado ? 'opacity-60' : ''} ${cursorEdit}">
+    // Modo eliminar: checkbox en todas las cards (ambos usuarios pueden eliminar)
+    if (modoPlan === 'eliminar') {
+      const seleccionado = seleccionadosPlan.has(d.id);
+      const checkClass   = seleccionado ? 'bg-purple-500 border-purple-500' : 'bg-white border-gray-300';
+      const checkHTML = `<div class="checkbox-card absolute top-3 left-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${checkClass}">
+        ${seleccionado ? `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>` : ''}
+      </div>`;
+      return `<div data-plan-id="${d.id}" class="bg-white shadow rounded-xl p-4 pl-12 border-2 border-purple-400 relative transition-all cursor-pointer select-none ${d.completado ? 'opacity-60' : ''}">
+        ${checkHTML}
+        <p class="text-gray-700 break-words pr-6">${d.texto}</p>
+        ${fechaLinea}
+      </div>`;
+    }
+
+    // Modo editar: todas las cards clickeables
+    if (modoPlan === 'editar') {
+      return `<div data-plan-id="${d.id}" class="bg-white shadow rounded-xl p-4 border-2 border-purple-400 relative transition-all cursor-pointer hover:border-purple-600 select-none ${d.completado ? 'opacity-60' : ''}">
+        <p class="text-gray-700 break-words pr-6">${d.texto}</p>
+        ${fechaLinea}
+        <span class="absolute top-3 right-3 text-purple-400">${lapizSVG}</span>
+      </div>`;
+    }
+
+    // Modo normal
+    const btnCirculo = !d.completado
+      ? `<button onclick="marcarCompletado('${d.id}')" title="Marcar como completado"
+          class="absolute top-3 right-3 w-7 h-7 rounded-full border-2 border-purple-300 hover:bg-purple-100 hover:border-purple-500 transition flex items-center justify-center"></button>`
+      : `<button onclick="desmarcarCompletado('${d.id}', '${d.tab}')" title="Desmarcar"
+          class="absolute top-3 right-3 w-7 h-7 rounded-full border-2 border-green-400 bg-green-100 hover:bg-green-200 transition flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg></button>`;
+
+    return `<div class="bg-white shadow rounded-xl p-4 border-2 border-purple-400 relative transition-all ${d.completado ? 'opacity-60' : ''}">
       <p class="text-gray-700 break-words pr-10">${d.texto}</p>
-      ${fechaLinea}${btnCirculo}${btnElim}
+      ${fechaLinea}${btnCirculo}
     </div>`;
   }).join('');
+
+  // Asignar eventos en modo eliminar y editar
+  if (modoPlan === 'eliminar') {
+    cont.querySelectorAll('[data-plan-id]').forEach(card => {
+      const id = card.dataset.planId;
+      card.addEventListener('click', () => {
+        if (seleccionadosPlan.has(id)) seleccionadosPlan.delete(id);
+        else seleccionadosPlan.add(id);
+        _renderPlanesHTML();
+        _actualizarBarraFlotantePlan();
+      });
+    });
+  } else if (modoPlan === 'editar') {
+    cont.querySelectorAll('[data-plan-id]').forEach(card => {
+      const id = card.dataset.planId;
+      card.addEventListener('click', () => {
+        const d = (renderPlanes._datos || []).find(x => x.id === id);
+        if (d) abrirModalPlan(d);
+      });
+    });
+  }
 }
