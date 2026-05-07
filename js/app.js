@@ -180,7 +180,7 @@ function mostrarToastDeshacer(tipo, items) {
     clearTimeout(deshacerTimeout);
     deshacerTimeout = null;
     if (deshacerDatos) {
-      commitEliminar(deshacerDatos);
+      _ejecutarCommit(deshacerDatos);
     }
   }
   deshacerDatos = { tipo, items };
@@ -198,7 +198,6 @@ function mostrarToastDeshacer(tipo, items) {
       'display:none',
       'align-items:center',
       'gap:12px',
-      // BUG FIX diseño: fondo clarito + contorno morado (igual que la barra de selección)
       'background:#ede9fe',
       'color:#6d28d9',
       'font-size:14px',
@@ -221,7 +220,6 @@ function mostrarToastDeshacer(tipo, items) {
   toastEl.classList.add('slide-up');
 
   document.getElementById('btn-deshacer').onclick = () => {
-    // BUG FIX: limpiar timeout ANTES de cualquier otra operación
     if (deshacerTimeout) {
       clearTimeout(deshacerTimeout);
       deshacerTimeout = null;
@@ -233,14 +231,25 @@ function mostrarToastDeshacer(tipo, items) {
 
     _ocultarToastDeshacer(toastEl);
 
-    // Reinsertar items y re-renderizar
-    datosGlobal = [...datosGlobal, ...itemsRestaurar].sort((a, b) => {
-      const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
-      const fb = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha);
-      return fb - fa;
-    });
-    if (tipoRestaurar) rerenderSeccion(tipoRestaurar);
-    renderInicio(datosGlobal);
+    if (tipoRestaurar === 'plan') {
+      // Restaurar planes: reinsertarlos en el array local y re-renderizar
+      if (!renderPlanes._datos) renderPlanes._datos = [];
+      renderPlanes._datos = [...renderPlanes._datos, ...itemsRestaurar].sort((a, b) => {
+        const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha || 0);
+        const fb = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha || 0);
+        return fb - fa;
+      });
+      _renderPlanesHTML();
+    } else {
+      // Restaurar contenido normal
+      datosGlobal = [...datosGlobal, ...itemsRestaurar].sort((a, b) => {
+        const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
+        const fb = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha);
+        return fb - fa;
+      });
+      if (tipoRestaurar) rerenderSeccion(tipoRestaurar);
+      renderInicio(datosGlobal);
+    }
     mostrarToast('¡Restaurado!', 'exito');
   };
 
@@ -250,9 +259,17 @@ function mostrarToastDeshacer(tipo, items) {
     if (deshacerDatos) {
       const datos = deshacerDatos;
       deshacerDatos = null;
-      await commitEliminar(datos);
+      await _ejecutarCommit(datos);
     }
   }, 4000);
+}
+
+async function _ejecutarCommit(datos) {
+  if (datos.tipo === 'plan') {
+    await commitEliminarPlanes(datos);
+  } else {
+    await commitEliminar(datos);
+  }
 }
 
 function _ocultarToastDeshacer(toastEl) {
@@ -277,6 +294,14 @@ async function commitEliminar({ tipo, items }) {
       await deleteDoc(doc(db, "parejas", codigoPareja, "contenido", item.id));
     }
   } catch (e) { console.error("Error eliminando:", e); mostrarToast("Error al eliminar", "error"); }
+}
+
+async function commitEliminarPlanes({ items }) {
+  try {
+    for (const item of items) {
+      await deleteDoc(doc(db, 'parejas', codigoPareja, 'planes', item.id));
+    }
+  } catch (e) { console.error("Error eliminando planes:", e); mostrarToast("Error al eliminar", "error"); }
 }
 
 // ===== SESIÓN =====
@@ -410,14 +435,14 @@ window.elegirModo = (tipo, modo) => {
 // BUG FIX: cancelarModo ahora también oculta cualquier toast de deshacer pendiente
 // y fuerza ocultar la barra flotante aunque no haya modo activo (edge case)
 window.cancelarModo = (tipo) => {
-  // Si había un deshacer pendiente, lo commiteamos antes de salir
+  // Si había un deshacer pendiente de ESTE tipo, lo commiteamos antes de salir
   if (deshacerTimeout && deshacerDatos?.tipo === tipo) {
     clearTimeout(deshacerTimeout);
     deshacerTimeout = null;
     const datos = deshacerDatos;
     deshacerDatos = null;
     ocultarToastDeshacerById();
-    commitEliminar(datos);
+    _ejecutarCommit(datos);
   }
   modoSeccion[tipo] = null;
   seleccionados[tipo].clear();
@@ -523,19 +548,22 @@ window.solicitarEliminarPlanes = () => {
     modalEliminar.classList.add('hidden');
     modalEliminar.classList.remove('flex');
     const ids = [...seleccionadosPlan];
-    
-    // BUG FIX: guardar items para posible deshacer en planes
     const itemsEliminados = (renderPlanes._datos || []).filter(d => ids.includes(d.id));
-    
-    try {
-      for (const id of ids) {
-        await deleteDoc(doc(db, 'parejas', codigoPareja, 'planes', id));
-      }
-      mostrarToast(`${ids.length > 1 ? ids.length + ' elementos eliminados' : 'Eliminado'}`, 'exito');
-    } catch (e) { mostrarToast('Error al eliminar', 'error'); console.error(e); }
-    
-    // BUG FIX: resetear modo y OCULTAR barra después de eliminar en planes
-    resetearModoEditarPlanes();
+
+    // Quitar visualmente de inmediato (igual que las otras secciones)
+    seleccionadosPlan.clear();
+    if (renderPlanes._datos) {
+      renderPlanes._datos = renderPlanes._datos.filter(d => !ids.includes(d.id));
+    }
+
+    // Resetear modo y ocultar barra ANTES del toast deshacer
+    modoPlan = null;
+    ocultarBarraFlotantePlan();
+    _actualizarBotonesHeaderPlan();
+    _renderPlanesHTML();
+
+    // Mostrar toast con deshacer (igual que las otras secciones)
+    mostrarToastDeshacer('plan', itemsEliminados);
   };
 };
 
@@ -1112,7 +1140,9 @@ function iniciarTiempoReal() {
       return fb - fa;
     });
 
-    const idsPendientes = deshacerDatos ? new Set(deshacerDatos.items.map(i => i.id)) : new Set();
+    const idsPendientes = (deshacerDatos && deshacerDatos.tipo !== 'plan')
+      ? new Set(deshacerDatos.items.map(i => i.id))
+      : new Set();
 
     if (idsConocidos === null) {
       idsConocidos = new Set(datos.map(d => d.id));
@@ -1163,6 +1193,15 @@ const guardarPlan     = document.getElementById('guardarPlan');
 
 // BUG FIX: resetearModoEditarPlanes siempre oculta la barra flotante del plan
 function resetearModoEditarPlanes() {
+  // Si había un deshacer de planes pendiente, commitearlo
+  if (deshacerTimeout && deshacerDatos?.tipo === 'plan') {
+    clearTimeout(deshacerTimeout);
+    deshacerTimeout = null;
+    const datos = deshacerDatos;
+    deshacerDatos = null;
+    ocultarToastDeshacerById();
+    commitEliminarPlanes(datos);
+  }
   modoPlan = null;
   seleccionadosPlan.clear();
   ocultarBarraFlotantePlan();
@@ -1253,8 +1292,16 @@ function renderPlanes() {
   if (renderPlanes._unsub) { _renderPlanesHTML(); return; }
   const ref = collection(db, 'parejas', codigoPareja, 'planes');
   renderPlanes._unsub = onSnapshot(ref, snap => {
+    const idsPendientes = (deshacerDatos?.tipo === 'plan')
+      ? new Set(deshacerDatos.items.map(i => i.id))
+      : new Set();
+
     renderPlanes._datos = [];
-    snap.forEach(d => renderPlanes._datos.push({ id: d.id, ...d.data() }));
+    snap.forEach(d => {
+      if (!idsPendientes.has(d.id)) {
+        renderPlanes._datos.push({ id: d.id, ...d.data() });
+      }
+    });
     renderPlanes._datos.sort((a, b) => {
       const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha || 0);
       const fb = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha || 0);
