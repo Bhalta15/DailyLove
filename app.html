@@ -41,6 +41,18 @@
   .menu-puntitos-dropdown {
     min-width: 140px;
   }
+
+  /* Animación slide-up/down para barras flotantes y toast */
+  @keyframes slideUp {
+    from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+    to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+  }
+  @keyframes slideDown {
+    from { transform: translateX(-50%) translateY(0);    opacity: 1; }
+    to   { transform: translateX(-50%) translateY(100px); opacity: 0; }
+  }
+  .slide-up   { animation: slideUp   0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  .slide-down { animation: slideDown 0.3s ease-in forwards; }
 </style>
 </head>
 <body class="bg-pink-50 min-h-screen font-sans">
@@ -231,7 +243,7 @@
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-semibold text-pink-600">Mensajes</h2>
       <div class="flex gap-2 items-center">
-        <button id="btnCancelarMensaje" onclick="cancelarModo('mensaje')" class="hidden px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">Cancelar</button>
+        <button id="btnCancelarMensaje" onclick="cancelarModo('mensaje')" class="hidden px-3 py-1.5 text-sm rounded-lg border-2 border-red-400 text-red-500 bg-red-50 hover:bg-red-100 font-medium transition">Listo</button>
         <button id="btnNuevoMensaje" onclick="abrirModal('mensaje')" class="w-9 h-9 bg-pink-500 text-white rounded flex items-center justify-center hover:bg-pink-600 transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </button>
@@ -261,7 +273,7 @@
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-semibold text-pink-600">Fotos</h2>
       <div class="flex gap-2 items-center">
-        <button id="btnCancelarFoto" onclick="cancelarModo('foto')" class="hidden px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">Cancelar</button>
+        <button id="btnCancelarFoto" onclick="cancelarModo('foto')" class="hidden px-3 py-1.5 text-sm rounded-lg border-2 border-red-400 text-red-500 bg-red-50 hover:bg-red-100 font-medium transition">Listo</button>
         <button id="btnNuevoFoto" onclick="abrirModal('foto')" class="w-9 h-9 bg-pink-500 text-white rounded flex items-center justify-center hover:bg-pink-600 transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </button>
@@ -291,7 +303,7 @@
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-semibold text-pink-600">Canciones</h2>
       <div class="flex gap-2 items-center">
-        <button id="btnCancelarCancion" onclick="cancelarModo('cancion')" class="hidden px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">Cancelar</button>
+        <button id="btnCancelarCancion" onclick="cancelarModo('cancion')" class="hidden px-3 py-1.5 text-sm rounded-lg border-2 border-red-400 text-red-500 bg-red-50 hover:bg-red-100 font-medium transition">Listo</button>
         <button id="btnNuevoCancion" onclick="abrirModal('cancion')" class="w-9 h-9 bg-pink-500 text-white rounded flex items-center justify-center hover:bg-pink-600 transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </button>
@@ -321,7 +333,7 @@
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-semibold text-pink-600">Frases</h2>
       <div class="flex gap-2 items-center">
-        <button id="btnCancelarFrase" onclick="cancelarModo('frase')" class="hidden px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">Cancelar</button>
+        <button id="btnCancelarFrase" onclick="cancelarModo('frase')" class="hidden px-3 py-1.5 text-sm rounded-lg border-2 border-red-400 text-red-500 bg-red-50 hover:bg-red-100 font-medium transition">Listo</button>
         <button id="btnNuevoFrase" onclick="abrirModal('frase')" class="w-9 h-9 bg-pink-500 text-white rounded flex items-center justify-center hover:bg-pink-600 transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </button>
@@ -351,19 +363,29 @@
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-semibold text-pink-600">Extras</h2>
       <div class="flex gap-2 items-center">
+        <button id="btnCancelarPlan" onclick="cancelarModoPlan()" class="hidden px-3 py-1.5 text-sm rounded-lg border-2 border-red-400 text-red-500 bg-red-50 hover:bg-red-100 font-medium transition">Listo</button>
         <button id="btnNuevoPlan" onclick="abrirModalPlan()"
-          class="p-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition">
+          class="w-9 h-9 bg-pink-500 text-white rounded flex items-center justify-center hover:bg-pink-600 transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
           </svg>
         </button>
-        <button id="btnEditarPlan" onclick="activarModoEditarPlanes()"
-          class="p-2 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-            <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
+        <div id="btnPuntitosPlan" class="menu-puntitos-container relative">
+          <button onclick="toggleMenuPuntitos('plan')" class="w-9 h-9 bg-purple-600 text-white rounded flex items-center justify-center hover:bg-purple-700 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          </button>
+          <div id="dropdown-plan" class="menu-puntitos-dropdown hidden absolute right-0 top-11 bg-white border border-gray-100 shadow-xl rounded-xl z-50 overflow-hidden">
+            <button onclick="elegirModoPlan('editar')" class="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Editar
+            </button>
+            <hr class="border-gray-100">
+            <button onclick="elegirModoPlan('eliminar')" class="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-50 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              Eliminar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="flex border-b border-pink-100 mb-4">
