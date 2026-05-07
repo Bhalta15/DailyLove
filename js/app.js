@@ -333,6 +333,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         }
         await cargarApodoPareja();
         iniciarTiempoReal();
+        renderPlanes(); // Iniciar listener de planes en tiempo real desde el arranque
         cargarCorazonesGuardados();
         actualizarMenuActivo('inicio');
         if (typeof OneSignal !== "undefined") {
@@ -548,10 +549,12 @@ window.solicitarEliminarPlanes = () => {
   modalEliminar.classList.remove('hidden');
   modalEliminar.classList.add('flex');
 
-  const nuevoAceptar  = aceptarEliminar.cloneNode(true);
-  const nuevoCancelar = cancelarEliminar.cloneNode(true);
-  aceptarEliminar.replaceWith(nuevoAceptar);
-  cancelarEliminar.replaceWith(nuevoCancelar);
+  const btnAceptar  = document.getElementById('aceptarEliminar');
+  const btnCancelar = document.getElementById('cancelarEliminar');
+  const nuevoAceptar  = btnAceptar.cloneNode(true);
+  const nuevoCancelar = btnCancelar.cloneNode(true);
+  btnAceptar.replaceWith(nuevoAceptar);
+  btnCancelar.replaceWith(nuevoCancelar);
 
   nuevoCancelar.onclick = () => {
     modalEliminar.classList.add('hidden');
@@ -644,10 +647,13 @@ window.solicitarEliminarSeleccionados = (tipo) => {
   modalEliminar.classList.remove('hidden');
   modalEliminar.classList.add('flex');
 
-  const nuevoAceptar  = aceptarEliminar.cloneNode(true);
-  const nuevoCancelar = cancelarEliminar.cloneNode(true);
-  aceptarEliminar.replaceWith(nuevoAceptar);
-  cancelarEliminar.replaceWith(nuevoCancelar);
+  // Siempre buscar los botones frescos del DOM para evitar referencias muertas
+  const btnAceptar  = document.getElementById('aceptarEliminar');
+  const btnCancelar = document.getElementById('cancelarEliminar');
+  const nuevoAceptar  = btnAceptar.cloneNode(true);
+  const nuevoCancelar = btnCancelar.cloneNode(true);
+  btnAceptar.replaceWith(nuevoAceptar);
+  btnCancelar.replaceWith(nuevoCancelar);
 
   nuevoCancelar.onclick = () => {
     modalEliminar.classList.add('hidden');
