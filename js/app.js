@@ -169,10 +169,9 @@ let deshacerTimeout = null;
 let deshacerDatos   = null; // { tipo, items: [{id, data}] }
 
 function mostrarToastDeshacer(tipo, items) {
-  // Cancelar cualquier eliminación pendiente anterior
+  // Cancelar cualquier eliminación pendiente anterior y commitear
   if (deshacerTimeout) {
     clearTimeout(deshacerTimeout);
-    // Eliminar los anteriores definitivamente si había pendientes
     if (deshacerDatos) commitEliminar(deshacerDatos);
   }
   deshacerDatos = { tipo, items };
@@ -193,10 +192,19 @@ function mostrarToastDeshacer(tipo, items) {
 
   document.getElementById('btn-deshacer').onclick = () => {
     clearTimeout(deshacerTimeout);
+    const itemsRestaurar = deshacerDatos?.items || [];
+    const tipoRestaurar  = deshacerDatos?.tipo;
     deshacerDatos = null;
-    // Restaurar cards (re-render ya las muestra porque no se borraron de datosGlobal aún)
-    rerenderSeccion(tipo);
     toastEl.classList.add('opacity-0', 'pointer-events-none');
+
+    // FIX 4: Reinsertar los items en datosGlobal y re-renderizar sin recargar
+    datosGlobal = [...datosGlobal, ...itemsRestaurar].sort((a, b) => {
+      const fa = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
+      const fb = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha);
+      return fb - fa;
+    });
+    if (tipoRestaurar) rerenderSeccion(tipoRestaurar);
+    renderInicio(datosGlobal);
     mostrarToast('¡Restaurado!', 'exito');
   };
 
@@ -285,10 +293,14 @@ function resetearModoSeccion(tipo) {
   seleccionados[tipo].clear();
   ocultarBarraFlotante(tipo);
   actualizarBotonesHeader(tipo);
+  // FIX 2: re-renderizar la sección para quitar checkboxes/cursores del modo anterior
+  rerenderSeccion(tipo);
 }
 
 function resetearTodosModos() {
-  ['mensaje', 'foto', 'cancion', 'frase'].forEach(tipo => resetearModoSeccion(tipo));
+  ['mensaje', 'foto', 'cancion', 'frase'].forEach(tipo => {
+    if (modoSeccion[tipo]) resetearModoSeccion(tipo);
+  });
 }
 
 document.querySelectorAll('.itemMenu').forEach(btn => {
@@ -384,10 +396,11 @@ function actualizarBarraFlotante(tipo) {
   const barra = document.getElementById(`barra-${tipo}`);
   if (!barra) return;
   const n = seleccionados[tipo].size;
+  // FIX 3: todo en una sola línea, compacto
   barra.innerHTML = `
-    <span class="text-sm text-gray-500">${n} seleccionado${n !== 1 ? 's' : ''}</span>
+    <span class="text-sm text-gray-500 whitespace-nowrap">${n} seleccionado${n !== 1 ? 's' : ''}</span>
     <button onclick="solicitarEliminarSeleccionados('${tipo}')"
-      class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition
         ${n > 0 ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}">
       ${basureroSVG} Eliminar${n > 0 ? ` (${n})` : ''}
     </button>`;
