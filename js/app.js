@@ -115,6 +115,10 @@ async function iniciarOneSignal() {
     if (playerId && miUid && codigoPareja) {
       await setDoc(doc(db, "usuarios", miUid), { oneSignalId: playerId }, { merge: true });
     }
+    // Limpiar notificaciones pendientes al abrir la app
+    if (OneSignal.Notifications.clearAll) {
+      await OneSignal.Notifications.clearAll();
+    }
   } catch (e) { console.error("OneSignal error:", e); }
 }
 
@@ -1275,6 +1279,7 @@ guardarPlan.onclick = async () => {
       await updateDoc(doc(db, 'parejas', codigoPareja, 'planes', planEditandoId), { texto, fechaPlan });
       mostrarToast('¡Editado!', 'exito');
       cerrarModalPlan();
+      await notificarPareja(tabPlanActual === 'cita' ? 'cita' : 'plan', texto, true);
     } catch (e) { mostrarToast('Error al editar', 'error'); console.error(e); }
   } else {
     try {
@@ -1283,6 +1288,7 @@ guardarPlan.onclick = async () => {
       });
       mostrarToast('¡Guardado!', 'exito');
       cerrarModalPlan();
+      await notificarPareja(tabPlanActual === 'cita' ? 'cita' : 'plan', texto, false);
     } catch (e) { mostrarToast('Error al guardar', 'error'); console.error(e); }
   }
 };
