@@ -381,7 +381,8 @@ setPersistence(auth, browserLocalPersistence).then(() => {
           btnPerfil.dataset.listener = "true";
         }
         if (!sessionStorage.getItem("bienvenidaMostrada")) {
-          mostrarToast(`¡Bienvenida ${datos.usuario}!`, "info");
+          const saludo = datos.genero === "mujer" ? "Bienvenida" : "Bienvenido";
+          mostrarToast(`¡${saludo} ${datos.usuario}!`, "info");
           sessionStorage.setItem("bienvenidaMostrada", "1");
         }
         await cargarApodoPareja();

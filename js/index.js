@@ -8,16 +8,12 @@ if ("serviceWorker" in navigator) {
 // ===== REDIRECCIÓN AUTOMÁTICA SI YA HAY SESIÓN =====
 import { auth } from "./firebase.js";
 import {
-  onAuthStateChanged,
-  browserLocalPersistence,
-  setPersistence
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-setPersistence(auth, browserLocalPersistence).then(() => {
-  onAuthStateChanged(auth, (user) => {
-    // Solo redirigir si el usuario existe Y ya verificó su correo
-    if (user && user.emailVerified) {
-      window.location.href = "app.html";
-    }
-  });
+onAuthStateChanged(auth, (user) => {
+  // Solo redirigir si el usuario existe Y ya verificó su correo
+  if (user && user.emailVerified) {
+    window.location.href = "app.html";
+  }
 });
