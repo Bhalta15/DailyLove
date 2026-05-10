@@ -954,7 +954,7 @@ function crearCardHTML(d, modo) {
     if (d.tipo === "mensaje" || d.tipo === "frase") {
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
         class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
-        ${checkHTML}<p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>${corazon}</div>`;
+        ${checkHTML}<p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>${corazon}</div>`;
     }
     if (d.tipo === "foto") {
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
@@ -966,7 +966,7 @@ function crearCardHTML(d, modo) {
       try { const p = JSON.parse(d.contenido); desc = p.desc; link = p.link; } catch { link = d.contenido; }
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
         class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
-        ${checkHTML}${desc ? `<p class="text-gray-700 text-base mb-3 break-all">"${desc}"</p>` : ""}
+        ${checkHTML}${desc ? `<p class="text-gray-700 text-base mb-3 break-words">"${desc}"</p>` : ""}
         <div class="flex items-center justify-between">
           <span class="text-gray-400 text-sm truncate max-w-[70%]">${link}</span>
           <span class="ml-2 px-3 py-1.5 bg-gray-200 text-gray-400 text-sm rounded-lg whitespace-nowrap cursor-not-allowed">Escuchar ▶</span>
@@ -988,7 +988,7 @@ function crearCardHTML(d, modo) {
   if (d.tipo === "mensaje" || d.tipo === "frase") {
     return `<div data-id="${d.id}" data-editar="${esMio}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
-      <p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>
+      <p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>
       ${corazon}
       ${iconEditar}
     </div>`;
@@ -1019,7 +1019,7 @@ function crearCardHTML(d, modo) {
     return `<div data-id="${d.id}" data-editar="${esMio}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
       
-      ${desc ? `<p class="text-gray-700 text-base mb-3 break-all">"${desc}"</p>` : ""}
+      ${desc ? `<p class="text-gray-700 text-base mb-3 break-words">"${desc}"</p>` : ""}
 
       <div class="flex items-center justify-between">
         <span class="text-gray-400 text-sm truncate max-w-[70%]">${link}</span>
@@ -1038,7 +1038,7 @@ function crearCardHTML(d, modo) {
   if (d.tipo === "mensaje" || d.tipo === "frase") {
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none">
-      <p class="text-gray-700 text-lg break-all pr-8">"${d.contenido}"</p>${corazon}</div>`;
+      <p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>${corazon}</div>`;
   }
   if (d.tipo === "foto") {
     return `<div data-id="${d.id}"
@@ -1051,7 +1051,7 @@ function crearCardHTML(d, modo) {
     try { const p = JSON.parse(d.contenido); desc = p.desc; link = p.link; } catch { link = d.contenido; }
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none">
-      ${desc ? `<p class="text-gray-700 text-base mb-3 break-all">"${desc}"</p>` : ""}
+      ${desc ? `<p class="text-gray-700 text-base mb-3 break-words">"${desc}"</p>` : ""}
       <div class="flex items-center justify-between">
         <a href="${link}" target="_blank" class="text-sky-500 hover:underline text-sm truncate max-w-[70%]">${link}</a>
         <a href="${link}" target="_blank" class="ml-2 px-3 py-1.5 bg-sky-400 hover:bg-sky-500 text-white text-sm rounded-lg transition whitespace-nowrap">Escuchar ▶</a>
@@ -1188,7 +1188,7 @@ function renderInicio(datos) {
   const frases    = datos.filter(d => d.tipo === "frase").slice(0, 3);
 
   setHTML(".listaMensajes", mensajes.map(m =>
-    `<li class="text-gray-700 text-sm mb-1 break-all">"${m.contenido}" - ${formatearFechaCorta(m.fecha)}</li>`
+    `<li class="text-gray-700 text-sm mb-1 break-words">"${m.contenido}" - ${formatearFechaCorta(m.fecha)}</li>`
   ).join(""));
 
   document.querySelectorAll(".listaFotos").forEach(el => {
@@ -1205,14 +1205,14 @@ function renderInicio(datos) {
   setHTML(".listaCanciones", canciones.map(c => {
     let desc = "", link = "";
     try { const p = JSON.parse(c.contenido); desc = p.desc; link = p.link; } catch { link = c.contenido; }
-    return `<li class="mb-2">${desc ? `<p class="text-gray-600 text-sm break-all">"${desc}"</p>` : ""}
+    return `<li class="mb-2">${desc ? `<p class="text-gray-600 text-sm break-words">"${desc}"</p>` : ""}
       <a href="${link}" target="_blank" class="text-sky-500 hover:underline text-sm">
         ${link.length > 35 ? link.substring(0, 35) + "..." : link}
       </a></li>`;
   }).join(""));
 
   setHTML(".listaFrases", frases.map(f =>
-    `<li class="text-gray-700 text-sm mb-1 break-all">"${f.contenido}"</li>`
+    `<li class="text-gray-700 text-sm mb-1 break-words">"${f.contenido}"</li>`
   ).join(""));
 }
 
@@ -1513,4 +1513,4 @@ function _renderPlanesHTML() {
       });
     });
   }
-}
+      }
