@@ -1401,7 +1401,7 @@ window.marcarCompletado = async (id) => {
 };
 
 window.desmarcarCompletado = async (id, tab) => {
-  const nombreTab = tab === 'cita' ? 'cita' : 'plan';
+  const nombreTab = tab === 'cita' ? 'cita' : tab === 'promesa' ? 'promesa' : 'plan';
   const modalConf = document.getElementById('modalConfirmarDesmarcar');
   let btnAceptar  = document.getElementById('aceptarDesmarcar');
   let btnCancelar = document.getElementById('cancelarDesmarcar');
@@ -1554,4 +1554,4 @@ function _renderPlanesHTML() {
       });
     });
   }
-          }
+}
