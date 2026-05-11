@@ -1490,7 +1490,7 @@ function _renderPlanesHTML() {
       const plazoMap = {
         corto:  '⚡ Corto plazo (- 1 año)',
         mediano:'🌱 Mediano plazo (1 - 3 años)',
-        largo:  '🌟 Largo plazo (3+ años)'
+        largo:  '🌳 Largo plazo (3+ años)'
       };
       fechaLinea = `<p class="text-xs text-purple-400 mt-1">${plazoMap[d.plazo] || ''}</p>`;
     } else if (d.fechaPlan) {
@@ -1554,4 +1554,4 @@ function _renderPlanesHTML() {
       });
     });
   }
-}
+                     }
