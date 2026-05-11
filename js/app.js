@@ -1478,7 +1478,7 @@ function _renderPlanesHTML() {
     const vaciosPlan = {
       cita:    "Aún no hay citas planeadas... ¡propón una! 🗓️",
       plan:    "Aún no hay planes... ¡qué se les ocurre! 💡",
-      promesa: "Aún no hay promesas... ¡escriban sus sueños juntos! 💍"
+      promesa: "Aún no hay promesas... ¡escriban sus sueños! 💍"
     };
     cont.innerHTML = `<p class="text-center text-gray-400 text-sm py-10">${vaciosPlan[tabPlanActual] || ''}</p>`;
     return;
