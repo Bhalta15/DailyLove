@@ -864,6 +864,11 @@ cancelarEditar.onclick = cerrarModalEditar;
 guardarEditar.onclick = async () => {
   const d = modalEditar._docActual;
   if (!d) return;
+  if (!dentroDeVentana(d.fecha)) {
+    mostrarToast("Ya no puedes editar esto (pasaron los 5 min)", "error");
+    cerrarModalEditar();
+    return;
+  }
   let nuevoContenido = "";
   if (d.tipo === "mensaje" || d.tipo === "frase") {
     nuevoContenido = editTexto.value.trim();
@@ -937,72 +942,81 @@ function ojitaSVG() {
 }
 
 // ===== CREAR CARD HTML =====
+const VENTANA_EDICION_MS = 5 * 60 * 1000; // 5 minutos
+
+function dentroDeVentana(fecha) {
+  const f = fecha?.toDate ? fecha.toDate() : new Date(fecha);
+  return (Date.now() - f.getTime()) < VENTANA_EDICION_MS;
+}
+
 function crearCardHTML(d, modo) {
-  const borde   = borderPorGenero(d.autorGenero);
-  const corazon = heartSVG(d);
-  const esMio   = d.autorUid === miUid;
+  const borde          = borderPorGenero(d.autorGenero);
+  const corazon        = heartSVG(d);
+  const esMio          = d.autorUid === miUid;
+  const puedoModificar = esMio && dentroDeVentana(d.fecha);
+  const hora           = `<span class="absolute bottom-2 right-3 text-[11px] text-gray-300 select-none pointer-events-none">${formatearHora(d.fecha)}</span>`;
 
   if (modo === 'eliminar') {
-    const opAjena      = !esMio ? 'opacity-40' : '';
+    const opAjena      = !puedoModificar ? 'opacity-40' : '';
     const seleccionado = seleccionados[d.tipo]?.has(d.id);
     const checkClass   = seleccionado ? 'bg-purple-500 border-purple-500' : 'bg-white border-gray-300';
 
-    const checkHTML = esMio
+    const checkHTML = puedoModificar
       ? `<div class="checkbox-card absolute top-3 left-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${checkClass}">
           ${seleccionado ? `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>` : ''}
         </div>` : '';
 
     if (d.tipo === "mensaje" || d.tipo === "frase") {
-      return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
-        class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
-        ${checkHTML}<p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>${corazon}</div>`;
+      return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${puedoModificar}"
+        class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${puedoModificar ? 'cursor-pointer' : ''}">
+        ${checkHTML}<p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>${corazon}${hora}</div>`;
     }
     if (d.tipo === "foto") {
-      return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
-        class="bg-white shadow-lg rounded-xl p-3 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
-        ${checkHTML}<div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}</div>`;
+      return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${puedoModificar}"
+        class="bg-white shadow-lg rounded-xl p-3 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${puedoModificar ? 'cursor-pointer' : ''}">
+        ${checkHTML}<div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}${hora}</div>`;
     }
     if (d.tipo === "cancion") {
       let desc = "", link = "";
       try { const p = JSON.parse(d.contenido); desc = p.desc; link = p.link; } catch { link = d.contenido; }
-      return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${esMio}"
-        class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${esMio ? 'cursor-pointer' : ''}">
+      return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${puedoModificar}"
+        class="bg-white shadow-lg rounded-xl p-5 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${puedoModificar ? 'cursor-pointer' : ''}">
         ${checkHTML}${desc ? `<p class="text-gray-700 text-base mb-3 break-words">"${desc}"</p>` : ""}
         <div class="flex items-center justify-between">
           <span class="text-gray-400 text-sm truncate max-w-[70%]">${link}</span>
           <span class="ml-2 px-3 py-1.5 bg-gray-200 text-gray-400 text-sm rounded-lg whitespace-nowrap cursor-not-allowed">Escuchar ▶</span>
-        </div>${corazon}</div>`;
+        </div>${corazon}${hora}</div>`;
     }
   }
 
   if (modo === 'editar') {
-  const opAjena      = !esMio ? 'opacity-40' : '';
-  const cursorEditar = esMio ? 'cursor-pointer hover:border-purple-400' : '';
+  const opAjena      = !puedoModificar ? 'opacity-40' : '';
+  const cursorEditar = puedoModificar ? 'cursor-pointer hover:border-purple-400' : '';
 
-  // Iconito abajo derecha
-  const iconEditar = esMio
-    ? `<span class="absolute bottom-3 right-3 text-purple-400">
+  // Iconito arriba derecha (solo si puede modificar)
+  const iconEditar = puedoModificar
+    ? `<span class="absolute top-3 right-3 text-purple-400">
          ${lapizSVG}
        </span>`
     : '';
 
   if (d.tipo === "mensaje" || d.tipo === "frase") {
-    return `<div data-id="${d.id}" data-editar="${esMio}"
+    return `<div data-id="${d.id}" data-editar="${puedoModificar}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
       <p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>
-      ${corazon}
       ${iconEditar}
+      ${hora}
     </div>`;
   }
 
   if (d.tipo === "foto") {
-    return `<div data-id="${d.id}" data-editar="${esMio}"
+    return `<div data-id="${d.id}" data-editar="${puedoModificar}"
       class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
       <div class="w-full h-48 overflow-hidden rounded-lg">
         <img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">
       </div>
-      ${corazon}
       ${iconEditar}
+      ${hora}
     </div>`;
   }
 
@@ -1017,7 +1031,7 @@ function crearCardHTML(d, modo) {
       link = d.contenido;
     }
 
-    return `<div data-id="${d.id}" data-editar="${esMio}"
+    return `<div data-id="${d.id}" data-editar="${puedoModificar}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
       
       ${desc ? `<p class="text-gray-700 text-base mb-3 break-words">"${desc}"</p>` : ""}
@@ -1029,8 +1043,8 @@ function crearCardHTML(d, modo) {
         </span>
       </div>
 
-      ${corazon}
       ${iconEditar}
+      ${hora}
     </div>`;
   }
 }
@@ -1039,13 +1053,13 @@ function crearCardHTML(d, modo) {
   if (d.tipo === "mensaje" || d.tipo === "frase") {
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none">
-      <p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>${corazon}</div>`;
+      <p class="text-gray-700 text-lg break-words pr-8">"${d.contenido}"</p>${corazon}${hora}</div>`;
   }
   if (d.tipo === "foto") {
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none">
       <div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>
-      ${corazon}${ojitaSVG()}</div>`;
+      ${corazon}${ojitaSVG()}${hora}</div>`;
   }
   if (d.tipo === "cancion") {
     let desc = "", link = "";
@@ -1056,7 +1070,7 @@ function crearCardHTML(d, modo) {
       <div class="flex items-center justify-between">
         <a href="${link}" target="_blank" class="text-sky-500 hover:underline text-sm truncate max-w-[70%]">${link}</a>
         <a href="${link}" target="_blank" class="ml-2 px-3 py-1.5 bg-sky-400 hover:bg-sky-500 text-white text-sm rounded-lg transition whitespace-nowrap">Escuchar ▶</a>
-      </div>${corazon}</div>`;
+      </div>${corazon}${hora}</div>`;
   }
 
   return "";
@@ -1116,7 +1130,7 @@ function renderPorFecha(tipo, datos) {
     if (!cardEl) return;
 
     if (modo === 'eliminar') {
-      if (d.autorUid === miUid) {
+      if (d.autorUid === miUid && dentroDeVentana(d.fecha)) {
         cardEl.addEventListener('click', () => {
           if (seleccionados[d.tipo].has(d.id)) seleccionados[d.tipo].delete(d.id);
           else seleccionados[d.tipo].add(d.id);
@@ -1125,7 +1139,7 @@ function renderPorFecha(tipo, datos) {
         });
       }
     } else if (modo === 'editar') {
-      if (d.autorUid === miUid) {
+      if (d.autorUid === miUid && dentroDeVentana(d.fecha)) {
         cardEl.addEventListener('click', () => abrirModalEditar(d));
       }
     } else {
@@ -1170,6 +1184,15 @@ function obtenerGrupoFecha(fecha) {
 function formatearFechaCorta(fecha) {
   const f = fecha?.toDate ? fecha.toDate() : new Date(fecha);
   return f.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+}
+
+function formatearHora(fecha) {
+  const f = fecha?.toDate ? fecha.toDate() : new Date(fecha);
+  let h = f.getHours();
+  const m = f.getMinutes().toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
 }
 
 function formatearFechaPlan(fechaPlan) {
