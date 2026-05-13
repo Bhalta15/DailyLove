@@ -954,7 +954,8 @@ function crearCardHTML(d, modo) {
   const corazon        = heartSVG(d);
   const esMio          = d.autorUid === miUid;
   const puedoModificar = esMio && dentroDeVentana(d.fecha);
-  const hora           = `<span class="absolute bottom-2 right-3 text-[11px] text-gray-300 select-none pointer-events-none">${formatearHora(d.fecha)}</span>`;
+  const hora           = `<span class="absolute bottom-2 right-3 text-[11px] text-gray-400 select-none pointer-events-none">${formatearHora(d.fecha)}</span>`;
+  const horaFoto       = `<div class="flex justify-end pt-1.5 pr-1"><span class="text-[11px] text-gray-400 select-none pointer-events-none">${formatearHora(d.fecha)}</span></div>`;
 
   if (modo === 'eliminar') {
     const opAjena      = !puedoModificar ? 'opacity-40' : '';
@@ -974,7 +975,7 @@ function crearCardHTML(d, modo) {
     if (d.tipo === "foto") {
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${puedoModificar}"
         class="bg-white shadow-lg rounded-xl p-3 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${puedoModificar ? 'cursor-pointer' : ''}">
-        ${checkHTML}<div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}${hora}</div>`;
+        ${checkHTML}<div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}${horaFoto}</div>`;
     }
     if (d.tipo === "cancion") {
       let desc = "", link = "";
@@ -1016,7 +1017,7 @@ function crearCardHTML(d, modo) {
         <img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">
       </div>
       ${iconEditar}
-      ${hora}
+      ${horaFoto}
     </div>`;
   }
 
@@ -1059,7 +1060,7 @@ function crearCardHTML(d, modo) {
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none">
       <div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>
-      ${corazon}${ojitaSVG()}${hora}</div>`;
+      ${corazon}${ojitaSVG()}${horaFoto}</div>`;
   }
   if (d.tipo === "cancion") {
     let desc = "", link = "";
