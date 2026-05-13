@@ -933,7 +933,7 @@ function heartSVG(d) {
 }
 
 function ojitaSVG() {
-  return `<button class="btn-ver-foto absolute bottom-0 right-0 w-8 h-8 rounded-bl-none rounded-br-lg rounded-tl-lg rounded-tr-none bg-purple-600 flex items-center justify-center shadow-md hover:bg-purple-700 transition">
+  return `<button class="btn-ver-foto absolute bottom-2 right-2 w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shadow-md hover:bg-purple-700 transition">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
       fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
