@@ -949,6 +949,15 @@ function dentroDeVentana(fecha) {
   return (Date.now() - f.getTime()) < VENTANA_EDICION_MS;
 }
 
+function getYoutubeId(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0];
+    if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+  } catch {}
+  return null;
+}
+
 function crearCardHTML(d, modo) {
   const borde          = borderPorGenero(d.autorGenero);
   const corazon        = heartSVG(d);
@@ -1065,12 +1074,14 @@ function crearCardHTML(d, modo) {
   if (d.tipo === "cancion") {
     let desc = "", link = "";
     try { const p = JSON.parse(d.contenido); desc = p.desc; link = p.link; } catch { link = d.contenido; }
+    const ytId = getYoutubeId(link);
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-5 ${borde} relative transition-all duration-300 select-none">
       ${desc ? `<p class="text-gray-700 text-base mb-3 break-words pr-8">"${desc}"</p>` : ""}
+      <div id="player-${d.id}" class="hidden w-full mb-3 rounded-lg overflow-hidden" style="aspect-ratio:16/9;"></div>
       <div class="flex items-center justify-between">
         <a href="${link}" target="_blank" class="text-sky-500 hover:underline text-sm truncate max-w-[70%]">${link}</a>
-        <a href="${link}" target="_blank" class="ml-2 px-3 py-1.5 bg-sky-400 hover:bg-sky-500 text-white text-sm rounded-lg transition whitespace-nowrap">Play ▶</a>
+        <button data-link="${link}" data-ytid="${ytId || ''}" data-playerid="player-${d.id}" class="btn-play ml-2 px-3 py-1.5 bg-sky-400 hover:bg-sky-500 text-white text-sm rounded-lg transition whitespace-nowrap">Play ▶</button>
       </div>
       ${corazon}
       <div class="flex justify-end mt-1"><span class="text-[11px] text-gray-500 select-none pointer-events-none">${formatearHora(d.fecha)}</span></div>
@@ -1151,6 +1162,52 @@ function renderPorFecha(tipo, datos) {
       if (d.tipo === "foto") {
         const ojito = cardEl.querySelector(".btn-ver-foto");
         if (ojito) ojito.addEventListener("click", e => { e.stopPropagation(); abrirFoto(d.contenido); });
+      }
+      if (d.tipo === "cancion") {
+        const btnPlay = cardEl.querySelector(".btn-play");
+        if (btnPlay) {
+          btnPlay.addEventListener("click", e => {
+            e.stopPropagation();
+            const ytId     = btnPlay.dataset.ytid;
+            const link     = btnPlay.dataset.link;
+            const playerEl = document.getElementById(btnPlay.dataset.playerid);
+
+            if (!ytId || !playerEl) { window.open(link, '_blank'); return; }
+
+            // Si ya está abierto, lo cierra
+            if (!playerEl.classList.contains('hidden')) {
+              playerEl.classList.add('hidden');
+              playerEl.innerHTML = '';
+              btnPlay.textContent = 'Play ▶';
+              return;
+            }
+
+            // Intenta embed
+            playerEl.classList.remove('hidden');
+            playerEl.innerHTML = `<iframe 
+              src="https://www.youtube.com/embed/${ytId}?autoplay=1" 
+              frameborder="0" allow="autoplay; encrypted-media" allowfullscreen
+              style="width:100%;height:100%;"
+              onerror="this.parentElement.classList.add('hidden');window.open('${link}','_blank')">
+            </iframe>`;
+            btnPlay.textContent = '✕ Cerrar';
+
+            // Si YouTube bloquea el embed, detecta el error y abre en YouTube
+            const iframe = playerEl.querySelector('iframe');
+            iframe.addEventListener('load', () => {
+              try {
+                if (!iframe.contentDocument && iframe.src.includes('youtube')) {
+                  // cargó ok
+                }
+              } catch {
+                playerEl.classList.add('hidden');
+                playerEl.innerHTML = '';
+                btnPlay.textContent = 'Play ▶';
+                window.open(link, '_blank');
+              }
+            });
+          });
+        }
       }
     }
   });
