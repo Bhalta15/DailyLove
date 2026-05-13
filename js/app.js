@@ -933,7 +933,7 @@ function heartSVG(d) {
 }
 
 function ojitaSVG() {
-  return `<button class="btn-ver-foto absolute bottom-2 right-2 w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shadow-md hover:bg-purple-700 transition">
+  return `<button class="btn-ver-foto absolute bottom-0 right-2 w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shadow-md hover:bg-purple-700 transition">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
       fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -954,8 +954,8 @@ function crearCardHTML(d, modo) {
   const corazon        = heartSVG(d);
   const esMio          = d.autorUid === miUid;
   const puedoModificar = esMio && dentroDeVentana(d.fecha);
-  const hora           = `<span class="absolute bottom-2 right-3 text-[11px] text-gray-400 select-none pointer-events-none">${formatearHora(d.fecha)}</span>`;
-  const horaFoto       = `<div class="flex justify-end pt-1.5 pr-1"><span class="text-[11px] text-gray-400 select-none pointer-events-none">${formatearHora(d.fecha)}</span></div>`;
+  const hora           = `<span class="absolute bottom-2 right-3 text-[11px] text-gray-500 select-none pointer-events-none">${formatearHora(d.fecha)}</span>`;
+  const horaFoto       = `<div class="flex justify-end pt-1.5 pr-1"><span class="text-[11px] text-gray-500 select-none pointer-events-none">${formatearHora(d.fecha)}</span></div>`;
 
   if (modo === 'eliminar') {
     const opAjena      = !puedoModificar ? 'opacity-40' : '';
@@ -975,7 +975,7 @@ function crearCardHTML(d, modo) {
     if (d.tipo === "foto") {
       return `<div data-id="${d.id}" data-tipo="${d.tipo}" data-selectable="${puedoModificar}"
         class="bg-white shadow-lg rounded-xl p-3 pl-12 ${borde} relative transition-all duration-300 select-none ${opAjena} ${puedoModificar ? 'cursor-pointer' : ''}">
-        ${checkHTML}<div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}${horaFoto}</div>`;
+        ${checkHTML}<div class="w-full h-[450px] overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>${corazon}${horaFoto}</div>`;
     }
     if (d.tipo === "cancion") {
       let desc = "", link = "";
@@ -1013,7 +1013,7 @@ function crearCardHTML(d, modo) {
   if (d.tipo === "foto") {
     return `<div data-id="${d.id}" data-editar="${puedoModificar}"
       class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none ${opAjena} ${cursorEditar}">
-      <div class="w-full h-48 overflow-hidden rounded-lg">
+      <div class="w-full h-[450px] overflow-hidden rounded-lg">
         <img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">
       </div>
       ${iconEditar}
@@ -1059,8 +1059,8 @@ function crearCardHTML(d, modo) {
   if (d.tipo === "foto") {
     return `<div data-id="${d.id}"
       class="bg-white shadow-lg rounded-xl p-3 ${borde} relative transition-all duration-300 select-none">
-      <div class="w-full h-48 overflow-hidden rounded-lg"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover"></div>
-      ${corazon}${ojitaSVG()}${horaFoto}</div>`;
+      <div class="w-full h-[450px] overflow-hidden rounded-lg relative"><img src="${d.contenido}" alt="Foto" class="w-full h-full object-cover">${corazon}${ojitaSVG()}</div>
+      ${horaFoto}</div>`;
   }
   if (d.tipo === "cancion") {
     let desc = "", link = "";
